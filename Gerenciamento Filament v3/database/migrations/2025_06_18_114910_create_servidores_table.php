@@ -17,9 +17,9 @@ return new class extends Migration
             $table->string('nome');
             $table->date('data_admissao');
             $table->string('email')->unique();
-            $table->foreignId('cargo_id')->constrained()->nullOnDelete()->nullable();
-            $table->foreignId('turno_id')->constrained()->nullOnDelete()->nullable();
-            $table->foreignId('lotacao_id')->constrained('lotacoes')->nullOnDelete()->nullable();
+            $table->foreignId('cargo_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('turno_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('lotacao_id')->nullable()->constrained('lotacoes')->nullOnDelete();
             $table->timestamps();
         });
 

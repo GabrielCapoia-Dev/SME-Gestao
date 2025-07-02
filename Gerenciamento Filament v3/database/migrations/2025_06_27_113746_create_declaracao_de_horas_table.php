@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('declaracao_de_horas', function (Blueprint $table) {
             $table->id();
             $table->foreignId('servidor_id')->constrained('servidores')->onDelete('cascade');
-            $table->foreignId('turno_id')->constrained()->nullOnDelete()->nullable();
+            $table->foreignId('turno_id')->nullable()->constrained()->nullOnDelete();
             $table->date('data');
             $table->date('hora_inicio')->nullable();
             $table->date('hora_fim')->nullable();

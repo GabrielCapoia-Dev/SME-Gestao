@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('nome');
             $table->string('descricao')->nullable();
-            $table->foreignId('regime_contratual_id')->constrained('regime_contratuals')->nullOnDelete()->nullable();
+            $table->foreignId('regime_contratual_id')->nullable()->constrained('regime_contratuals')->nullOnDelete();
             $table->timestamps();
         });
     }

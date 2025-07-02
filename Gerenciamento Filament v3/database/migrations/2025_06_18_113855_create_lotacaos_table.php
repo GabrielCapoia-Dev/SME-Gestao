@@ -16,8 +16,8 @@ return new class extends Migration
             $table->string('nome');
             $table->string('codigo');
             $table->string('descricao')->nullable();
-            $table->foreignId('setor_id')->constrained('setors')->nullOnDelete()->nullable();
-            $table->foreignId('cargo_id')->constrained('cargos')->nullOnDelete()->nullable();
+            $table->foreignId('setor_id')->nullable()->constrained('setors')->nullOnDelete();
+            $table->foreignId('cargo_id')->nullable()->constrained('cargos')->nullOnDelete();
             $table->timestamps();
         });
     }
