@@ -119,7 +119,7 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('email')
                     ->label('E-mail')
                     ->searchable(),
-                    
+
                 Tables\Columns\TextColumn::make('servidor.nome')
                     ->label('Servidor')
                     ->sortable()
@@ -236,13 +236,15 @@ class UserResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->whereHas('roles', function ($query) {
-            /** @var \App\Models\User|null $user */
-            $user = Auth::user();
-            if (!$user || $user->hasRole('Admin')) {
-                return $query;
-            }
-            $query->where('name', '!=', 'Admin');
-        });
+        $query = parent::getEloquentQuery();
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+
+        if ($user && !$user->hasRole('Admin')) {
+            // Apenas não-admins veem só usuários não-admins
+            $query->whereHas('roles', fn($q) => $q->where('name', '!=', 'Admin'));
+        }
+
+        return $query;
     }
 }

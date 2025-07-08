@@ -8,14 +8,14 @@ class ServidorApiService
 {
     protected string $baseUrl = 'https://servicos.umuarama.pr.gov.br/portaltransparencia-api/api';
 
-    public function obterServidores(int $entidade = 1, int $exercicio = 2025, int $pagina): array
+    public function obterServidores(int $entidade = 1, int $exercicio = 2022, int $pagina = 0): array
     {
         $response = Http::withHeaders([
             'entidade' => $entidade,
             'exercicio' => $exercicio,
         ])->get("{$this->baseUrl}/servidores", [
             'page' => $pagina,
-            'size' => 10000,
+            'size' => 2000,
             'sort' => [],
         ]);
 
