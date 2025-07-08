@@ -112,11 +112,11 @@ class ServidorResource extends Resource
                                             ->seconds(false),
 
                                         Forms\Components\TimePicker::make('saida_intervalo')
-                                            ->label('Saída para Almoço')
+                                            ->label('Saída para Almoço (Apenas servidores 40 horas)')
                                             ->seconds(false),
 
                                         Forms\Components\TimePicker::make('entrada_intervalo')
-                                            ->label('Retorno do Almoço')
+                                            ->label('Retorno do Almoço (Apenas servidores 40 horas)')
                                             ->seconds(false),
 
                                         Forms\Components\TimePicker::make('saida')
