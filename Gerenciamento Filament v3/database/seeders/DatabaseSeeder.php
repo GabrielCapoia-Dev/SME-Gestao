@@ -43,6 +43,54 @@ class DatabaseSeeder extends Seeder
             'Criar Dominios de Email',
             'Editar Dominios de Email',
             'Excluir Dominios de Email',
+            'Listar Turnos',
+            'Criar Turnos',
+            'Editar Turnos',
+            'Excluir Turnos',
+            'Listar Turmas',
+            'Criar Turmas',
+            'Editar Turmas',
+            'Excluir Turmas',
+            'Listar Tipos de Atestados',
+            'Criar Tipos de Atestados',
+            'Editar Tipos de Atestados',
+            'Excluir Tipos de Atestados',
+            'Listar Setores',
+            'Criar Setores',
+            'Editar Setores',
+            'Excluir Setores',
+            'Listar Servidores',
+            'Criar Servidores',
+            'Editar Servidores',
+            'Excluir Servidores',
+            'Listar Regimes Contratuais',
+            'Criar Regimes Contratuais',
+            'Editar Regimes Contratuais',
+            'Excluir Regimes Contratuais',
+            'Listar Professores',
+            'Criar Professores',
+            'Editar Professores',
+            'Excluir Professores',
+            'Listar Lotações',
+            'Criar Lotações',
+            'Editar Lotações',
+            'Excluir Lotações',
+            'Listar Declarações de Hora',
+            'Criar Declarações de Hora',
+            'Editar Declarações de Hora',
+            'Excluir Declarações de Hora',
+            'Listar Cargos',
+            'Criar Cargos',
+            'Editar Cargos',
+            'Excluir Cargos',
+            'Listar Aulas',
+            'Criar Aulas',
+            'Editar Aulas',
+            'Excluir Aulas',
+            'Listar Afastamentos',
+            'Criar Afastamentos',
+            'Editar Afastamentos',
+            'Excluir Afastamentos'
         ];
 
         // Criação de permissões
@@ -53,10 +101,10 @@ class DatabaseSeeder extends Seeder
         // Criação de roles
         $superAdminRole = Role::firstOrCreate(['name' => 'SuperAdmin']);
         $adminRole = Role::firstOrCreate(['name' => 'Admin']);
-        Role::firstOrCreate(['name' => 'Usuário']);
-        Role::firstOrCreate(['name' => 'Secretário']);
-        Role::firstOrCreate(['name' => 'Coordenador']);
-        Role::firstOrCreate(['name' => 'Diretor']);
+        // Role::firstOrCreate(['name' => 'Secretário Escolar']);
+        // Role::firstOrCreate(['name' => 'Coordenador']);
+        // Role::firstOrCreate(['name' => 'Diretor']);
+        // Role::firstOrCreate(['name' => 'Professor']);
 
         $superAdminRole->syncPermissions($permissionsList);
         $adminRole->syncPermissions($permissionsList);
@@ -132,15 +180,10 @@ class DatabaseSeeder extends Seeder
         // Criação de Setores (escolas)
         // ========================
         $nomesEscolas = [
-            'Escola Municipal São José',
-            'Colégio Estadual Machado de Assis',
-            'CMEI Pingo de Gente',
-            'Escola Municipal Cecília Meireles',
-            'CMEI Gira Mundo',
-            'Colégio Estadual Santos Dumont',
-            'Escola Municipal Heitor Villa-Lobos',
-            'CMEI Jardim da Alegria',
-            'Escola Municipal Juscelino Kubitschek',
+            'Escola Municipal Analides',
+            'CMEI Maria Yokohama',
+            'Escola Municipal Benjamin Constant',
+            'CMEI Cecília Meireles',
         ];
 
         $setores = [];
@@ -262,7 +305,7 @@ class DatabaseSeeder extends Seeder
         // ========================
         // Criação de X servidores aleatórios com setor
         // ========================
-        $numeroServidores = 100;
+        $numeroServidores = 80;
 
         for ($i = 1; $i <= $numeroServidores; $i++) {
             $servidor = Servidor::create([
@@ -276,7 +319,7 @@ class DatabaseSeeder extends Seeder
             ]);
 
             // Vincular o servidor a 1 a 3 setores aleatórios
-            $setoresAleatorios = collect($setores)->random(rand(1, 3))->pluck('id');
+            $setoresAleatorios = collect($setores)->random()->pluck('id');
             $servidor->setores()->attach($setoresAleatorios);
 
             $turnoNome = $servidor->turno->nome;
