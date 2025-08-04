@@ -318,9 +318,9 @@ class DatabaseSeeder extends Seeder
                 'data_admissao' => fake()->date('Y-m-d', '-10 years'),
             ]);
 
-            // Vincular o servidor a 1 a 3 setores aleatórios
-            $setoresAleatorios = collect($setores)->random()->pluck('id');
-            $servidor->setores()->attach($setoresAleatorios);
+            // Vincular a exatamente 1 setor aleatório
+            $setorAleatorioId = collect($setores)->random()->id;
+            $servidor->setores()->sync([$setorAleatorioId]);
 
             $turnoNome = $servidor->turno->nome;
 

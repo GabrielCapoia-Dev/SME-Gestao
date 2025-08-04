@@ -12,12 +12,14 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use AlperenErsoy\FilamentExport\Actions\FilamentExportHeaderAction;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Servidor;
 
 class AtestadoResource extends Resource
 {
     protected static ?string $model = Atestado::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-plus-circle';
+    protected static ?string $navigationIcon = 'heroicon-o-user-minus';
 
     protected static ?string $navigationGroup = 'Gerenciamento de Servidores';
 
@@ -33,12 +35,43 @@ class AtestadoResource extends Resource
             ->schema([
                 Forms\Components\Select::make('servidor_id')
                     ->label('Servidor')
-                    ->relationship('servidor', 'nome')
-                    ->getOptionLabelFromRecordUsing(function ($record) {
-                        return "{$record->matricula} - {$record->nome}";
-                    })
                     ->searchable()
                     ->preload()
+                    ->options(function () {
+                        /** @var \App\Models\User|null $user */
+                        $user = Auth::user();
+
+                        $servidoresQuery = Servidor::query();
+
+                        if ($user->servidor) {
+                            $userSetorIds = $user->servidor->setores()->pluck('setors.id')->toArray();
+
+                            if (!empty($userSetorIds)) {
+                                $servidoresQuery->whereHas('setores', function ($query) use ($userSetorIds) {
+                                    $query->whereIn('setors.id', $userSetorIds);
+                                })->pluck('nome', 'id');
+
+                                return $servidoresQuery
+                                    ->get()
+                                    ->mapWithKeys(function ($servidor) {
+                                        return [
+                                            $servidor->id => "[{$servidor->matricula}] {$servidor->nome}"
+                                        ];
+                                    })
+                                    ->toArray();
+                            }
+                        }
+
+                        return $servidoresQuery
+                            ->get()
+                            ->mapWithKeys(function ($servidor) {
+                                return [
+                                    $servidor->id => "[{$servidor->matricula}] {$servidor->nome}"
+                                ];
+                            })
+                            ->toArray();
+                    })
+                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->matricula} - {$record->nome}")
                     ->required(),
 
                 Forms\Components\Select::make('tipo_atestado_id')

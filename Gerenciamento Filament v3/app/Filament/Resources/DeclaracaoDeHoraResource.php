@@ -14,6 +14,8 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
 use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Servidor;
 
 class DeclaracaoDeHoraResource extends Resource
 {
@@ -33,13 +35,27 @@ class DeclaracaoDeHoraResource extends Resource
             ->schema([
                 Forms\Components\Select::make('servidor_id')
                     ->label('Servidor')
-                    ->relationship('servidor', 'nome')
-                    ->getOptionLabelFromRecordUsing(function ($record) {
-                        return "{$record->matricula} - {$record->nome}";
-                    })
                     ->searchable()
                     ->preload()
+                    ->options(function () {
+                        /** @var \App\Models\User|null $user */
+                        $user = Auth::user();
+
+                        if ($user->servidor) {
+                            $userSetorIds = $user->servidor->setores()->pluck('setors.id')->toArray();
+
+                            if (!empty($userSetorIds)) {
+                                return Servidor::whereHas('setores', function ($query) use ($userSetorIds) {
+                                    $query->whereIn('setors.id', $userSetorIds);
+                                })->pluck('nome', 'id');
+                            }
+                        }
+
+                        return Servidor::pluck('nome', 'id');
+                    })
+                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->matricula} - {$record->nome}")
                     ->required(),
+
 
                 Forms\Components\DatePicker::make('data')
                     ->label('Data')
@@ -206,6 +222,7 @@ class DeclaracaoDeHoraResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->headerActions([
                 FilamentExportHeaderAction::make('export')

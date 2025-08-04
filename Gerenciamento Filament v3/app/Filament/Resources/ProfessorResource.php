@@ -13,6 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
+use Illuminate\Support\Facades\Auth;
 
 class ProfessorResource extends Resource
 {
@@ -37,15 +38,34 @@ class ProfessorResource extends Resource
                 Forms\Components\Select::make('servidor_id')
                     ->label('Servidor')
                     ->options(function () {
-                        return Servidor::with(['cargo.regimeContratual'])
-                            ->whereHas('cargo', fn($q) => $q->where('nome', 'Professor'))
-                            ->get()
+                        $user = Auth::user();
+
+                        $query = Servidor::with(['cargo.regimeContratual'])
+                            ->whereHas('cargo', fn($q) => $q->where('nome', 'Professor'));
+
+                        if ($user->servidor) {
+                            $userSetorIds = $user->servidor
+                                ->setores()
+                                ->select('setors.id')
+                                ->pluck('setors.id')
+                                ->toArray();
+
+                            if (!empty($userSetorIds)) {
+                                $query->whereHas('setores', function ($q) use ($userSetorIds) {
+                                    $q->whereIn('setors.id', $userSetorIds);
+                                });
+                            }
+                        }
+
+                        return $query->get()
                             ->mapWithKeys(function ($servidor) {
                                 $cargo = $servidor->cargo?->nome ?? '-';
                                 $regime = $servidor->cargo?->regimeContratual?->nome ?? '-';
-                                $label = "{$servidor->matricula} - {$servidor->nome} ({$cargo} - {$regime})";
-                                return [$servidor->id => $label];
-                            });
+                                return [
+                                    $servidor->id => "[{$servidor->matricula}] {$servidor->nome} ({$cargo} - {$regime})"
+                                ];
+                            })
+                            ->toArray();
                     })
                     ->searchable()
                     ->preload()
