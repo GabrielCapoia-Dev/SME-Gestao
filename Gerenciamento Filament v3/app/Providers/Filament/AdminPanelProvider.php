@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use Illuminate\Support\Str;
 use App\Livewire\PasswordReset;
 use App\Models\User;
 use App\Services\DominioEmailService;
@@ -48,7 +49,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                // Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([])
@@ -71,6 +72,12 @@ class AdminPanelProvider extends PanelProvider
                     ->label('Registro de Atividade')
                     ->pluralLabel('Registro de Atividades')
                     ->navigationGroup('Administrativo')
+                    ->translateSubject(
+                        fn($label) => __("models." . \Illuminate\Support\Str::snake($label), [], 'pt_BR') !== "models." . Str::snake($label)
+                            ? __("models." . \Illuminate\Support\Str::snake($label), [], 'pt_BR')
+                            : $label
+                    )
+
                     ->navigationSort(1)
                     ->authorize(function () {
                         /** @var \App\Models\User|null $user */

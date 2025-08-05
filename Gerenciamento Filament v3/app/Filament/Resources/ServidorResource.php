@@ -12,6 +12,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use AlperenErsoy\FilamentExport\Actions\FilamentExportHeaderAction;
+use Rmsramos\Activitylog\Actions\ActivityLogTimelineTableAction;
 use Carbon\Carbon;
 
 use Filament\Tables\Actions\Action;
@@ -223,7 +224,7 @@ class ServidorResource extends Resource
                 Tables\Columns\TextColumn::make('data_admissao')
                     ->label('Data de Admissão')
                     ->sortable()
-                    ->formatStateUsing(fn ($state) => Carbon::parse($state)->format('d/m/Y'))
+                    ->formatStateUsing(fn($state) => Carbon::parse($state)->format('d/m/Y'))
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
 
@@ -316,6 +317,8 @@ class ServidorResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                ActivityLogTimelineTableAction::make('Histórico'),
+
             ])
             ->headerActions([
                 FilamentExportHeaderAction::make('export')
