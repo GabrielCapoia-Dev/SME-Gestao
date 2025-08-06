@@ -72,12 +72,15 @@ class AdminPanelProvider extends PanelProvider
                     ->label('Registro de Atividade')
                     ->pluralLabel('Registro de Atividades')
                     ->navigationGroup('Administrativo')
+                    ->navigationItem(false)
+                    ->isRestoreActionHidden(true)
+                    ->isResourceActionHidden(true)
+                    ->isRestoreModelActionHidden(true)
                     ->translateSubject(
                         fn($label) => __("models." . \Illuminate\Support\Str::snake($label), [], 'pt_BR') !== "models." . Str::snake($label)
                             ? __("models." . \Illuminate\Support\Str::snake($label), [], 'pt_BR')
                             : $label
                     )
-
                     ->navigationSort(1)
                     ->authorize(function () {
                         /** @var \App\Models\User|null $user */
