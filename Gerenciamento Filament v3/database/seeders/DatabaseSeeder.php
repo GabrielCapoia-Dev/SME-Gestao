@@ -17,6 +17,7 @@ use App\Models\SiglaTurma;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\TipoAtestado;
+use App\Services\ApiFilterService;
 
 class DatabaseSeeder extends Seeder
 {
@@ -93,21 +94,44 @@ class DatabaseSeeder extends Seeder
             'Excluir Afastamentos'
         ];
 
+        $rhPermissionsList = [
+            'Listar Cargos',
+            'Criar Cargos',
+            'Editar Cargos',
+            'Excluir Cargos',
+            'Listar Lotações',
+            'Criar Lotações',
+            'Editar Lotações',
+            'Excluir Lotações',
+            'Listar Regimes Contratuais',
+            'Criar Regimes Contratuais',
+            'Editar Regimes Contratuais',
+            'Excluir Regimes Contratuais',
+            'Listar Setores',
+            'Criar Setores',
+            'Editar Setores',
+            'Excluir Setores',
+            'Listar Tipos de Atestados',
+            'Criar Tipos de Atestados',
+            'Editar Tipos de Atestados',
+            'Excluir Tipos de Atestados',
+            'Listar Turnos',
+            'Criar Turnos',
+            'Editar Turnos',
+            'Excluir Turnos',
+        ];
+
         // Criação de permissões
         foreach ($permissionsList as $permissionName) {
             Permission::firstOrCreate(['name' => $permissionName]);
         }
 
         // Criação de roles
-        $superAdminRole = Role::firstOrCreate(['name' => 'SuperAdmin']);
-        $adminRole = Role::firstOrCreate(['name' => 'Admin']);
-        // Role::firstOrCreate(['name' => 'Secretário Escolar']);
-        // Role::firstOrCreate(['name' => 'Coordenador']);
-        // Role::firstOrCreate(['name' => 'Diretor']);
-        // Role::firstOrCreate(['name' => 'Professor']);
+        $superAdminRole = Role::firstOrCreate(['name' => 'Admin']);
+        $rhRole = Role::firstOrCreate(['name' => 'RH']);
 
         $superAdminRole->syncPermissions($permissionsList);
-        $adminRole->syncPermissions($permissionsList);
+        $rhRole->syncPermissions($rhPermissionsList);
 
         // Criação do usuário admin
         $adminUser = User::firstOrCreate(
@@ -120,7 +144,9 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $adminUser->assignRole($adminRole);
+
+        $adminUser->assignRole($superAdminRole);
+
 
         // ========================
         // Criação de Turnos
@@ -143,6 +169,7 @@ class DatabaseSeeder extends Seeder
             'Estatutário',
             'C.L.T',
             'PSS',
+            'Comissionado',
         ];
 
         $regimeContratualIds = [];
@@ -151,6 +178,7 @@ class DatabaseSeeder extends Seeder
             $regimeModel = RegimeContratual::firstOrCreate(['nome' => $regime]);
             $regimeContratualIds[$regime] = $regimeModel->id;
         }
+
 
         // ========================
         // Criação de Cargos
@@ -172,46 +200,6 @@ class DatabaseSeeder extends Seeder
                         'descricao' => "{$cargoNome} - {$regimeNome}",
                     ]
                 );
-            }
-        }
-
-
-        // ========================
-        // Criação de Setores (escolas)
-        // ========================
-        $nomesEscolas = [
-            'Escola Municipal Analides',
-            'CMEI Maria Yokohama',
-            'Escola Municipal Benjamin Constant',
-            'CMEI Cecília Meireles',
-        ];
-
-        $setores = [];
-
-        foreach ($nomesEscolas as $nome) {
-            $setores[] = Setor::firstOrCreate(
-                ['nome' => $nome],
-                [
-                    'email' => fake()->unique()->safeEmail(),
-                    'telefone' => fake()->phoneNumber(),
-                ]
-            );
-        }
-
-        // ========================
-        // Criação de Lotações
-        // ========================
-        $lotacoes = [];
-
-        foreach ($setores as $setor) {
-            foreach (Cargo::all() as $cargo) {
-                $lotacoes[] = Lotacao::create([
-                    'nome' => "{$cargo->nome} - {$setor->nome}",
-                    'codigo' => fake()->unique()->numerify('013.123.###'),
-                    'descricao' => "Lotação para {$cargo->descricao} em {$setor->nome}",
-                    'setor_id' => $setor->id,
-                    'cargo_id' => $cargo->id,
-                ]);
             }
         }
 
@@ -255,6 +243,9 @@ class DatabaseSeeder extends Seeder
             'Maternal I',
             'Maternal II',
             'Maternal III',
+            'Berçario I',
+            'Berçario II',
+            'Berçario III',
         ];
 
         foreach ($tipos as $nome) {
@@ -302,70 +293,103 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        // ========================
-        // Criação de X servidores aleatórios com setor
-        // ========================
-        $numeroServidores = 80;
 
-        for ($i = 1; $i <= $numeroServidores; $i++) {
-            $servidor = Servidor::create([
-                'nome' => fake()->name(),
-                'matricula' => str_pad($i, 4, '0', STR_PAD_LEFT),
-                'email' => fake()->unique()->safeEmail(),
-                'cargo_id' => Cargo::inRandomOrder()->first()->id,
-                'turno_id' => Turno::inRandomOrder()->first()->id,
-                'lotacao_id' => collect($lotacoes)->random()->id,
-                'data_admissao' => fake()->date('Y-m-d', '-10 years'),
-            ]);
+        // {
 
-            // Vincular a exatamente 1 setor aleatório
-            $setorAleatorioId = collect($setores)->random()->id;
-            $servidor->setores()->sync([$setorAleatorioId]);
+        $service = new ApiFilterService();
+        $setoresApi  = $service->obterLocalTrabalho();
 
-            $turnoNome = $servidor->turno->nome;
+        $setores = [];
 
-            switch ($turnoNome) {
-                case 'Integral':
-                    $entrada = '08:00';
-                    $saida_intervalo = '12:00';
-                    $entrada_intervalo = '13:30';
-                    $saida = '17:00';
-                    break;
-
-                case 'Manhã':
-                    $entrada = '08:00';
-                    $saida_intervalo = '12:00';
-                    $entrada_intervalo = null;
-                    $saida = null;
-                    break;
-
-                case 'Tarde':
-                    $entrada = null;
-                    $saida_intervalo = null;
-                    $entrada_intervalo = '13:30';
-                    $saida = '17:00';
-                    break;
-
-                case 'Noite':
-                    $entrada = '18:00';
-                    $saida_intervalo = null;
-                    $entrada_intervalo = null;
-                    $saida = '23:00';
-                    break;
-
-                default:
-                    $entrada = $saida_intervalo = $entrada_intervalo = $saida = null;
-                    break;
-            }
-
-
-            CargaHoraria::create([
-                'servidor_id' => $servidor->id,
-                'entrada' => $entrada,
-                'saida_intervalo' => $saida_intervalo,
-                'entrada_intervalo' => $entrada_intervalo,
-                'saida' => $saida,
+        foreach ($setoresApi as $setorData) {
+            $setores[] = Setor::create([
+                'nome' => $setorData['local_trabalho'],
             ]);
         }
+
+
+        // ========================
+        // Criação de Lotações
+        // ========================
+        $lotacoes = [];
+
+        foreach ($setores as $setor) {
+            foreach (Cargo::all() as $cargo) {
+                $lotacoes[] = Lotacao::create([
+                    'nome' => "{$setor->nome} - {$cargo->nome} - {$cargo->regimeContratual->nome}",
+                    'codigo' => fake()->unique()->numerify('013.123.###.###'),
+                    'descricao' => "Lotação para {$cargo->nome} - {$cargo->regimeContratual->nome} em {$setor->nome}",
+                    'setor_id' => $setor->id,
+                    'cargo_id' => $cargo->id,
+                ]);
+            }
+        }
+
+        // // ========================
+        // // Criação de X servidores aleatórios com setor
+        // // ========================
+        // $numeroServidores = 20;
+
+        // for ($i = 1; $i <= $numeroServidores; $i++) {
+        //     $servidor = Servidor::create([
+        //         'nome' => fake()->name(),
+        //         'matricula' => str_pad($i, 4, '0', STR_PAD_LEFT),
+        //         'email' => fake()->unique()->safeEmail(),
+        //         'cargo_id' => Cargo::inRandomOrder()->first()->id,
+        //         'turno_id' => Turno::inRandomOrder()->first()->id,
+        //         'lotacao_id' => collect($lotacoes)->random()->id,
+        //         'data_admissao' => fake()->date('Y-m-d', '-10 years'),
+        //     ]);
+
+        //     // Vincular a exatamente 1 setor aleatório
+        //     $setorAleatorioId = collect($setores)->random()->id;
+        //     $servidor->setores()->sync([$setorAleatorioId]);
+
+        //     $turnoNome = $servidor->turno->nome;
+
+        //     switch ($turnoNome) {
+        //         case 'Integral':
+        //             $entrada = '08:00';
+        //             $saida_intervalo = '12:00';
+        //             $entrada_intervalo = '13:30';
+        //             $saida = '17:00';
+        //             break;
+
+        //         case 'Manhã':
+        //             $entrada = '08:00';
+        //             $saida_intervalo = '12:00';
+        //             $entrada_intervalo = null;
+        //             $saida = null;
+        //             break;
+
+        //         case 'Tarde':
+        //             $entrada = null;
+        //             $saida_intervalo = null;
+        //             $entrada_intervalo = '13:30';
+        //             $saida = '17:00';
+        //             break;
+
+        //         case 'Noite':
+        //             $entrada = '18:00';
+        //             $saida_intervalo = null;
+        //             $entrada_intervalo = null;
+        //             $saida = '23:00';
+        //             break;
+
+        //         default:
+        //             $entrada = $saida_intervalo = $entrada_intervalo = $saida = null;
+        //             break;
+        //     }
+
+
+        //     CargaHoraria::create([
+        //         'servidor_id' => $servidor->id,
+        //         'entrada' => $entrada,
+        //         'saida_intervalo' => $saida_intervalo,
+        //         'entrada_intervalo' => $entrada_intervalo,
+        //         'saida' => $saida,
+        //     ]);
+        // }
+        // }
     }
 }

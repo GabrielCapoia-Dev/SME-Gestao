@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('setors', function (Blueprint $table) {
             $table->id();
             $table->string('nome')->unique();
-            $table->string('email')->unique();
+            $table->string('email')->nullable()->unique();
             $table->string('telefone')->nullable();
             $table->timestamps();
         });

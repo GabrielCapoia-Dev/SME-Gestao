@@ -84,6 +84,7 @@ class DeclaracaoDeHoraResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->paginated([10, 25, 50, 100])
             ->columns([
                 Tables\Columns\TextColumn::make('servidor.matricula')
                     ->label('Mat. Servidor Afastado')

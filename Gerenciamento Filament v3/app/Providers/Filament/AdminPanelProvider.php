@@ -72,7 +72,6 @@ class AdminPanelProvider extends PanelProvider
                     ->label('Registro de Atividade')
                     ->pluralLabel('Registro de Atividades')
                     ->navigationGroup('Administrativo')
-                    ->navigationItem(false)
                     ->isRestoreActionHidden(true)
                     ->isResourceActionHidden(true)
                     ->isRestoreModelActionHidden(true)

@@ -11,7 +11,7 @@ class ServidorController extends Controller
     {
         try {
             for ($pagina = 0; $pagina < 3; $pagina++) {
-                $dados = $service->obterServidores(1, 2024, $pagina);
+                $dados = $service->obterServidores();
             }
             return response()->json($dados);
         } catch (\Exception $e) {
