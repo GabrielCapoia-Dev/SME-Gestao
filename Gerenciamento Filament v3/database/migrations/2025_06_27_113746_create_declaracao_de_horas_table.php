@@ -16,8 +16,8 @@ return new class extends Migration
             $table->foreignId('servidor_id')->constrained('servidores')->onDelete('cascade');
             $table->foreignId('turno_id')->nullable()->constrained()->nullOnDelete();
             $table->date('data');
-            $table->date('hora_inicio')->nullable();
-            $table->date('hora_fim')->nullable();
+            $table->string('hora_inicio')->nullable();
+            $table->string('hora_fim')->nullable();
             $table->string('cid')->nullable();
             $table->string('carga_horaria')->nullable();
             $table->timestamps();

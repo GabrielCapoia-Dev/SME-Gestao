@@ -57,7 +57,18 @@ class RegimeContratualResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+
+                Tables\Filters\SelectFilter::make('cargo_id')
+                    ->label('Cargo')
+                    ->relationship('cargo', 'nome')
+                    ->searchable()
+                    ->preload(),
+                    
+                Tables\Filters\SelectFilter::make('regime_contratual_id')
+                    ->label('Regime Contratual')
+                    ->relationship('cargo.regimeContratual', 'nome')
+                    ->searchable()
+                    ->preload(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

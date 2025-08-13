@@ -35,7 +35,7 @@ class AtestadoService
 
     public static function validarDataRetroativa(int $dataInicio, int $dataFim): bool
     {
-        if ($dataInicio > $dataFim) {
+        if ($dataInicio >= $dataFim) {
             return true;
         }
 

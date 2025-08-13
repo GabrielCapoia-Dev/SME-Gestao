@@ -197,6 +197,16 @@ class ApiFilterService
                         "TERMINAL RODOVIARIO",
                         "TESOURARIA - PRÉDIO",
                         "TIRO DE GUERRA",
+                        "UBS - BEM ESTAR",
+                        "UBS - CENTRAL",
+                        "UBS - COHAPAR III",
+                        "UBS - JARDIM LISBOA",
+                        "UBS - SANTA ELIZA",
+                        "UBS - VITORIA REGIA",
+                        "UMUTRANS",
+                        "VIGILANCIA EPIDEMIOLOGICA",
+                        "VIGILANCIA SANITARIA",
+                        "VIGILANTES MUNICIPAIS",
                     ]);
                 })
                 ->sortBy('local_trabalho', SORT_NATURAL | SORT_FLAG_CASE)

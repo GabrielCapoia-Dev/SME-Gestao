@@ -14,6 +14,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Servidor;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
+use App\Models\Setor;
 use Rmsramos\Activitylog\Actions\ActivityLogTimelineTableAction;
 
 class UserResource extends Resource
@@ -52,28 +55,39 @@ class UserResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
-                    ->label('Nome de usuário')
-                    ->required(),
+                    ->label('Nome de usuário')
+                    ->required()
+                    ->disabled(function (Get $get, ?User $record): bool {
+                        $hasServidorNoRegistro = $record?->servidor()->exists() ?? false;
+                        return filled($get('servidor_id')) || $hasServidorNoRegistro;
+                    })
+                    ->dehydrated(true),
 
                 Forms\Components\TextInput::make('email')
                     ->label('E-mail')
                     ->unique(ignoreRecord: true)
                     ->email()
-                    ->required(),
+                    ->required()
+                    ->disabled(function (Get $get, ?User $record): bool {
+                        $hasServidorNoRegistro = $record?->servidor()->exists() ?? false;
+                        return filled($get('servidor_id')) || $hasServidorNoRegistro;
+                    })
+                    ->dehydrated(true),
+
 
                 Forms\Components\TextInput::make('password')
                     ->label('Senha')
                     ->password()
                     ->revealable()
-                    ->dehydrateStateUsing(fn($state) => Hash::make($state))
+                    ->dehydrateStateUsing(fn($state) => \Illuminate\Support\Facades\Hash::make($state))
                     ->dehydrated(fn($state) => filled($state))
                     ->required(fn(string $context): bool => $context === 'create'),
 
                 Forms\Components\Select::make('role')
-                    ->label('Nivel de acesso')
-                    ->relationship('roles', 'name', function (Builder $query) {
+                    ->label('Nível de acesso')
+                    ->relationship('roles', 'name', function (\Illuminate\Database\Eloquent\Builder $query) {
                         /** @var \App\Models\User|null $user */
-                        $user = Auth::user();
+                        $user = \Illuminate\Support\Facades\Auth::user();
                         if (!$user || $user->hasRole('Admin')) {
                             return $query;
                         }
@@ -94,18 +108,125 @@ class UserResource extends Resource
 
                 Forms\Components\Select::make('servidor_id')
                     ->label('Servidor vinculado')
-                    ->options(function () {
-                        return Servidor::whereNull('user_id')
-                            ->pluck('nome', 'id');
-                    })
+                    ->options(
+                        fn() => Servidor::whereNull('user_id')
+                            ->get(['id', 'matricula', 'nome'])
+                            ->mapWithKeys(fn($s) => [
+                                $s->id => "[{$s->matricula}] {$s->nome}",
+                            ])
+                            ->toArray()
+                    )
                     ->searchable()
-                    ->preload()
+                    ->getSearchResultsUsing(function (string $search): array {
+                        return Servidor::query()
+                            ->whereNull('user_id')
+                            ->where(function ($q) use ($search) {
+                                $q->where('nome', 'like', "%{$search}%")
+                                    ->orWhere('matricula', 'like', "%{$search}%");
+                            })
+                            ->limit(50)
+                            ->get(['id', 'matricula', 'nome'])
+                            ->mapWithKeys(fn($s) => [
+                                $s->id => "[{$s->matricula}] {$s->nome}",
+                            ])
+                            ->toArray();
+                    })
                     ->helperText('Só é possível vincular um servidor que ainda não esteja associado a outro usuário.')
                     ->native(false)
                     ->visibleOn('create')
                     ->nullable()
+                    ->live()
+                    ->afterStateUpdated(function (Set $set, $state): void {
+                        if (blank($state)) {
+                            $set('name', null);
+                            $set('email', null);
+                            $set('setor_id', null);
+                            return;
+                        }
+
+                        $servidor = Servidor::with(['setores', 'lotacao.setor'])->find($state);
+
+                        // auto-fill name/email
+                        $set('name', $servidor?->nome);
+                        $set('email', $servidor?->email);
+
+                        // setor: primeiro do pivot, senão o da lotação
+                        $setorId = $servidor?->setores?->first()?->id
+                            ?? $servidor?->lotacao?->setor?->id
+                            ?? null;
+
+                        $set('setor_id', $setorId);
+                    })
                     ->columnSpanFull(),
 
+                Forms\Components\Select::make('setor_id')
+                    ->label('Setor')
+                    ->options(fn() => Setor::query()->pluck('nome', 'id'))
+                    ->searchable()
+                    ->preload()
+                    ->native(false)
+                    ->nullable()
+                    ->required(function (Get $get, ?User $record): bool {
+                        $hasServidorNoRegistro = $record?->servidor()->exists() ?? false;
+                        return ! $hasServidorNoRegistro && blank($get('servidor_id'));
+                    })
+                    ->disabled(function (Get $get, ?User $record): bool {
+                        $hasServidorNoRegistro = $record?->servidor()->exists() ?? false;
+                        return filled($get('servidor_id')) || $hasServidorNoRegistro;
+                    })
+                    ->helperText(function (Get $get, ?User $record): string {
+                        $hasServidorNoRegistro = $record?->servidor()->exists() ?? false;
+                        return (filled($get('servidor_id')) || $hasServidorNoRegistro)
+                            ? 'Setor definido pelo Servidor e bloqueado para edição.'
+                            : 'Selecione um setor.';
+                    })
+                    ->columnSpanFull()
+                    ->visibleOn('create'),
+
+
+                Forms\Components\Section::make('Vínculo com Servidor')
+                    ->icon('heroicon-o-identification')
+                    ->description('Servidor vinculado a este usuário')
+                    ->schema([
+
+                        Forms\Components\Placeholder::make('servidor_nome_ro')
+                            ->label('Servidor vinculado')
+                            ->content(function (?User $record): string {
+                                $s = $record?->servidor;
+                                if (! $s) {
+                                    return '—';
+                                }
+
+                                $matricula = $s->matricula ?? 's/ matrícula';
+                                $nome = $s->nome ?? 's/ nome';
+
+                                return "[{$matricula}] {$nome}";
+                            })
+                            ->extraAttributes(['class' => 'text-base font-medium'])
+                            ->visibleOn('edit'),
+
+                        Forms\Components\Placeholder::make('servidor_setor_ro')
+                            ->label('Local de Trabalho')
+                            ->content(function (?User $record) {
+                                $servidor = $record?->servidor;
+
+                                if (! $servidor) {
+                                    return '—';
+                                }
+
+                                // Prefer setores via pivot
+                                if ($servidor->setores && $servidor->setores->isNotEmpty()) {
+                                    return $servidor->setores->pluck('nome')->join(', ');
+                                }
+
+                                // Fallback: setor da lotação
+                                return $servidor->lotacao?->setor?->nome ?? '—';
+                            })
+                            ->extraAttributes(['class' => 'text-base']),
+                    ])
+                    ->columns(3)
+                    ->visibleOn('edit') // mostra só no editar
+                    ->columnSpanFull()
             ]);
     }
 
@@ -126,7 +247,26 @@ class UserResource extends Resource
                     ->label('Servidor')
                     ->sortable()
                     ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: false),
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('servidor_setor')
+                    ->label('Setor do Servidor')
+                    ->getStateUsing(function (\App\Models\User $record): ?string {
+                        $servidor = $record->servidor;
+                        if (! $servidor) {
+                            return null;
+                        }
+
+                        // Prefer: setores do pivot
+                        if ($servidor->setores && $servidor->setores->isNotEmpty()) {
+                            return $servidor->setores->pluck('nome')->join(', ');
+                        }
+
+                        // Fallback: setor da lotação
+                        return $servidor->lotacao?->setor?->nome ?? null;
+                    })
+                    ->toggleable(isToggledHiddenByDefault: true),
+
 
                 Tables\Columns\TextColumn::make('roles.name')
                     ->label('Nivel de acesso')
@@ -194,7 +334,6 @@ class UserResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                ActivityLogTimelineTableAction::make('Histórico'),
 
             ])
             ->headerActions([
@@ -240,12 +379,13 @@ class UserResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
-        /** @var \App\Models\User|null $user */
-        $user = Auth::user();
+        $query = parent::getEloquentQuery()
+            ->with(['servidor.setores', 'servidor.lotacao.setor']);
 
-        if ($user && !$user->hasRole('Admin')) {
-            // Apenas não-admins veem só usuários não-admins
+        /** @var \App\Models\User|null $user */
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        if ($user && ! $user->hasRole('Admin')) {
             $query->whereHas('roles', fn($q) => $q->where('name', '!=', 'Admin'));
         }
 

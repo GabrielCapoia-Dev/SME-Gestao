@@ -38,12 +38,13 @@ class ProfessorResource extends Resource
                 Forms\Components\Select::make('servidor_id')
                     ->label('Servidor')
                     ->options(function () {
+                        /** @var \App\Models\User|null $user */
                         $user = Auth::user();
 
                         $query = Servidor::with(['cargo.regimeContratual'])
                             ->whereHas('cargo', fn($q) => $q->where('nome', 'Professor'));
 
-                        if ($user->servidor) {
+                        if (!$user->hasRole('Admin') && $user->servidor) {
                             $userSetorIds = $user->servidor
                                 ->setores()
                                 ->select('setors.id')
@@ -75,24 +76,39 @@ class ProfessorResource extends Resource
 
                 Forms\Components\Select::make('turma_id')
                     ->label('Turma')
-                    ->options(function (Get $get) {
-                        $servidorId = $get('servidor_id');
-
-                        if (!$servidorId) {
+                    ->options(function (Get $get): array {
+                        $user = Auth::user();
+                        if (!$user) {
                             return [];
                         }
 
-                        $servidor = \App\Models\Servidor::with('lotacao.setor')->find($servidorId);
-                        $setorId = $servidor?->lotacao?->setor?->id;
+                        $setorIds = collect();
 
-                        if (!$setorId) {
+                        if (!empty($user->setor_id)) {
+                            $setorIds->push($user->setor_id);
+                        }
+
+                        if ($user->servidor) {
+                            $setorIds = $setorIds->merge(
+                                $user->servidor->setores()->pluck('setors.id')
+                            );
+
+                            if ($setorIds->isEmpty() && $user->servidor->lotacao?->setor_id) {
+                                $setorIds->push($user->servidor->lotacao->setor_id);
+                            }
+                        }
+
+                        $setorIds = $setorIds->filter()->unique();
+                        if ($setorIds->isEmpty()) {
                             return [];
                         }
 
-                        return \App\Models\Turma::where('setor_id', $setorId)
-                            ->with(['nomeTurma', 'siglaTurma'])
-                            ->get()
-                            ->mapWithKeys(fn($turma) => [$turma->id => $turma->nomeCompleto()]);
+                        return Turma::query()
+                            ->whereIn('setor_id', $setorIds)
+                            ->with(['nomeTurma:id,nome', 'siglaTurma:id,nome'])
+                            ->get(['id', 'nome_turma_id', 'sigla_turma_id', 'setor_id'])
+                            ->mapWithKeys(fn(Turma $turma) => [$turma->id => $turma->nomeCompleto()])
+                            ->toArray();
                     })
                     ->searchable()
                     ->preload()
@@ -161,9 +177,8 @@ class ProfessorResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-                //
-            ])
+            ->filters([])
+
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

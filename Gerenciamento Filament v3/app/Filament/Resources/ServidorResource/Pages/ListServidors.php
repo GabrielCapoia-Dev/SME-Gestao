@@ -41,6 +41,13 @@ class ListServidors extends ListRecords
             }
         }
 
+        // Verifica se o usuário tem um setor vinculado
+        if ($user->setor) {
+            $query->whereHas('setores', function ($q) use ($user) {
+                $q->where('setors.id', $user->setor->id);
+            });
+        }
+
         // Fallback: se não houver servidor ou setor, lista tudo
         return $query;
     }

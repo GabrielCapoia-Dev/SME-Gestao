@@ -34,6 +34,7 @@ class User extends Authenticatable implements FilamentUser
         'email_approved',
         'email_verified_at',
         'password',
+        'setor_id',
     ];
 
     /**
@@ -111,5 +112,10 @@ class User extends Authenticatable implements FilamentUser
     public function servidor()
     {
         return $this->hasOne(Servidor::class);
+    }
+
+    public function setor()
+    {
+        return $this->belongsTo(Setor::class);
     }
 }

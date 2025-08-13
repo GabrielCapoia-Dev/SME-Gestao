@@ -62,12 +62,16 @@ class DeclaracaoDeHoraResource extends Resource
                     ->required(),
 
                 Forms\Components\TimePicker::make('hora_inicio')
+                    ->label('Hora de Início')
                     ->seconds(false)
-                    ->label('Hora de Início'),
+                    ->required()
+                    ->rule('date_format:H:i'),
 
                 Forms\Components\TimePicker::make('hora_fim')
+                    ->label('Hora de Fim')
                     ->seconds(false)
-                    ->label('Hora de Fim'),
+                    ->required()
+                    ->rule('date_format:H:i'),
 
                 Forms\Components\Select::make('turno_id')
                     ->label('Periodo')
