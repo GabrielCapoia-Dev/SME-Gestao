@@ -13,6 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
+use Illuminate\Support\Facades\Auth;
 
 class ProfessorResource extends Resource
 {
@@ -37,15 +38,35 @@ class ProfessorResource extends Resource
                 Forms\Components\Select::make('servidor_id')
                     ->label('Servidor')
                     ->options(function () {
-                        return Servidor::with(['cargo.regimeContratual'])
-                            ->whereHas('cargo', fn($q) => $q->where('nome', 'Professor'))
-                            ->get()
+                        /** @var \App\Models\User|null $user */
+                        $user = Auth::user();
+
+                        $query = Servidor::with(['cargo.regimeContratual'])
+                            ->whereHas('cargo', fn($q) => $q->where('nome', 'Professor'));
+
+                        if (!$user->hasRole('Admin') && $user->servidor) {
+                            $userSetorIds = $user->servidor
+                                ->setores()
+                                ->select('setors.id')
+                                ->pluck('setors.id')
+                                ->toArray();
+
+                            if (!empty($userSetorIds)) {
+                                $query->whereHas('setores', function ($q) use ($userSetorIds) {
+                                    $q->whereIn('setors.id', $userSetorIds);
+                                });
+                            }
+                        }
+
+                        return $query->get()
                             ->mapWithKeys(function ($servidor) {
                                 $cargo = $servidor->cargo?->nome ?? '-';
                                 $regime = $servidor->cargo?->regimeContratual?->nome ?? '-';
-                                $label = "{$servidor->matricula} - {$servidor->nome} ({$cargo} - {$regime})";
-                                return [$servidor->id => $label];
-                            });
+                                return [
+                                    $servidor->id => "[{$servidor->matricula}] {$servidor->nome} ({$cargo} - {$regime})"
+                                ];
+                            })
+                            ->toArray();
                     })
                     ->searchable()
                     ->preload()
@@ -55,24 +76,39 @@ class ProfessorResource extends Resource
 
                 Forms\Components\Select::make('turma_id')
                     ->label('Turma')
-                    ->options(function (Get $get) {
-                        $servidorId = $get('servidor_id');
-
-                        if (!$servidorId) {
+                    ->options(function (Get $get): array {
+                        $user = Auth::user();
+                        if (!$user) {
                             return [];
                         }
 
-                        $servidor = \App\Models\Servidor::with('lotacao.setor')->find($servidorId);
-                        $setorId = $servidor?->lotacao?->setor?->id;
+                        $setorIds = collect();
 
-                        if (!$setorId) {
+                        if (!empty($user->setor_id)) {
+                            $setorIds->push($user->setor_id);
+                        }
+
+                        if ($user->servidor) {
+                            $setorIds = $setorIds->merge(
+                                $user->servidor->setores()->pluck('setors.id')
+                            );
+
+                            if ($setorIds->isEmpty() && $user->servidor->lotacao?->setor_id) {
+                                $setorIds->push($user->servidor->lotacao->setor_id);
+                            }
+                        }
+
+                        $setorIds = $setorIds->filter()->unique();
+                        if ($setorIds->isEmpty()) {
                             return [];
                         }
 
-                        return \App\Models\Turma::where('setor_id', $setorId)
-                            ->with(['nomeTurma', 'siglaTurma'])
-                            ->get()
-                            ->mapWithKeys(fn($turma) => [$turma->id => $turma->nomeCompleto()]);
+                        return Turma::query()
+                            ->whereIn('setor_id', $setorIds)
+                            ->with(['nomeTurma:id,nome', 'siglaTurma:id,nome'])
+                            ->get(['id', 'nome_turma_id', 'sigla_turma_id', 'setor_id'])
+                            ->mapWithKeys(fn(Turma $turma) => [$turma->id => $turma->nomeCompleto()])
+                            ->toArray();
                     })
                     ->searchable()
                     ->preload()
@@ -89,6 +125,7 @@ class ProfessorResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->paginated([10, 25, 50, 100])
             ->columns([
                 Tables\Columns\TextColumn::make('servidor.lotacao.setor.nome')
                     ->label('Local de Trabalho')
@@ -140,9 +177,8 @@ class ProfessorResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-                //
-            ])
+            ->filters([])
+
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

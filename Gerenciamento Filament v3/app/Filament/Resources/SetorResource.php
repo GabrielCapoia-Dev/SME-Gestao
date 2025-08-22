@@ -14,6 +14,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Support\Enums\MaxWidth;
 
 class SetorResource extends Resource
 {
@@ -29,6 +31,12 @@ class SetorResource extends Resource
 
     public static ?string $slug = 'locais-de-trabalho';
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with('turmas');
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -41,12 +49,10 @@ class SetorResource extends Resource
                 Forms\Components\TextInput::make('email')
                     ->label('E-mail')
                     ->email()
-                    ->required()
                     ->maxLength(255),
 
                 Forms\Components\TextInput::make('telefone')
                     ->label('Telefone')
-                    ->required()
                     ->tel()
                     ->maxLength(20),
 
@@ -55,34 +61,66 @@ class SetorResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('turmas')
                             ->label('Turmas')
-                            ->relationship('turmas', 'nome')
+                            ->options(function () {
+                                $turmas = \App\Models\Turma::pluck('nome', 'id');
+
+                                if ($turmas->isEmpty()) {
+                                    return [
+                                        '' => '⚠️ Cadastre uma turma primeiro',
+                                    ];
+                                }
+
+                                return $turmas;
+                            })
+                            ->disabled(fn() => \App\Models\Turma::count() === 0)
                             ->multiple()
                             ->searchable()
                             ->preload(),
                     ])
                     ->columns(1)
                     ->collapsed(),
+
             ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->paginated([10, 25, 50, 100])
+            ->filtersLayout(FiltersLayout::AboveContent)
+            ->filtersFormColumns(5)
+            ->filtersFormWidth(MaxWidth::Medium)
             ->columns([
                 TextColumn::make('nome')
                     ->label('Nome')
                     ->sortable()
                     ->searchable(),
 
+                TextColumn::make('turmas')
+                    ->label('Turmas')
+                    ->getStateUsing(function ($record) {
+                        $turmas = $record->turmas?->pluck('nome')->filter();
+
+                        return $turmas->isNotEmpty()
+                            ? $turmas->join(', ')
+                            : '⚠️ Não há turmas cadastradas';
+                    })
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+
                 TextColumn::make('email')
                     ->label('E-mail')
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('telefone')
                     ->label('Telefone')
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Criado em')
                     ->dateTime()
@@ -95,8 +133,29 @@ class SetorResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\Filter::make('tipo_escola')
+                    ->form([
+                        Forms\Components\CheckboxList::make('tipos')
+                            ->label(false)
+                            ->options([
+                                'C.M.E.I' => 'C.M.E.I',
+                                'Escola' => 'Escola',
+                            ])
+                            ->columns(2),
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if (empty($data['tipos'])) {
+                            return;
+                        }
+
+                        $query->where(function ($q) use ($data) {
+                            foreach ($data['tipos'] as $tipo) {
+                                $q->orWhere('nome', 'like', "%{$tipo}%");
+                            }
+                        });
+                    })
             ])
+
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

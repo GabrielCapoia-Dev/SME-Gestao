@@ -42,6 +42,12 @@ class PermissionResource extends Resource
 
     public static ?int $navigationSort = 2;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
+
 
     public static function form(Form $form): Form
     {
@@ -62,6 +68,7 @@ class PermissionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->paginated([10, 25, 50, 100])
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Permissão de execução')
@@ -79,21 +86,21 @@ class PermissionResource extends Resource
                 // Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
-                        ->visible(function () {
-                            /** @var \App\Models\User|null $user */
-                            $user = Auth::user();
+                // Tables\Actions\BulkActionGroup::make([
+                //     Tables\Actions\DeleteBulkAction::make()
+                //         ->visible(function () {
+                //             /** @var \App\Models\User|null $user */
+                //             $user = Auth::user();
 
-                            // Se não estiver autenticado, esconde
-                            if (!$user) {
-                                return false;
-                            }
+                //             // Se não estiver autenticado, esconde
+                //             if (!$user) {
+                //                 return false;
+                //             }
 
-                            // Mostra só para Admin
-                            return $user->hasRole('Admin');
-                        }),
-                ])
+                //             // Mostra só para Admin
+                //             return $user->hasRole('Admin');
+                //         }),
+                // ])
             ]);
     }
 

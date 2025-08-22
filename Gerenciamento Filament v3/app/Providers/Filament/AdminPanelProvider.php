@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use Illuminate\Support\Str;
 use App\Livewire\PasswordReset;
 use App\Models\User;
 use App\Services\DominioEmailService;
@@ -27,6 +28,7 @@ use DutchCodingCompany\FilamentSocialite\Models\SocialiteUser;
 use DutchCodingCompany\FilamentSocialite\Provider;
 use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Contracts\User as SocialiteUserContract;
+use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -67,10 +69,22 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->plugins([
+                FilamentApexChartsPlugin::make(),
+
+
                 ActivitylogPlugin::make()
                     ->label('Registro de Atividade')
                     ->pluralLabel('Registro de Atividades')
                     ->navigationGroup('Administrativo')
+                    ->isRestoreActionHidden(true)
+                    ->navigationItem(false)
+                    ->isResourceActionHidden(true)
+                    ->isRestoreModelActionHidden(true)
+                    ->translateSubject(
+                        fn($label) => __("models." . \Illuminate\Support\Str::snake($label), [], 'pt_BR') !== "models." . Str::snake($label)
+                            ? __("models." . \Illuminate\Support\Str::snake($label), [], 'pt_BR')
+                            : $label
+                    )
                     ->navigationSort(1)
                     ->authorize(function () {
                         /** @var \App\Models\User|null $user */
@@ -85,32 +99,32 @@ class AdminPanelProvider extends PanelProvider
                         return $user->hasRole('Admin');
                     }),
 
-                FilamentSocialitePlugin::make()
-                    ->providers([
-                        'google' => Provider::make('google')->label('Google'),
-                    ])
-                    ->registration(true)
-                    ->createUserUsing(function (string $provider, SocialiteUserContract $oauthUser) {
-                        $service = new GoogleService();
+                // FilamentSocialitePlugin::make()
+                //     ->providers([
+                //         'google' => Provider::make('google')->label('Google'),
+                //     ])
+                //     ->registration(true)
+                //     ->createUserUsing(function (string $provider, SocialiteUserContract $oauthUser) {
+                //         $service = new GoogleService();
 
-                        $email = $oauthUser->getEmail();
+                //         $email = $oauthUser->getEmail();
 
-                        if (!app('App\Services\DominioEmailService')->isEmailAutorizado($email)) {
-                            throw new \App\Exceptions\EmailNaoAutorizado('Email não é permitido para cadastro, entre em contato com o administrador.');
-                        }
+                //         if (!app('App\Services\DominioEmailService')->isEmailAutorizado($email)) {
+                //             throw new \App\Exceptions\EmailNaoAutorizado('Email não é permitido para cadastro, entre em contato com o administrador.');
+                //         }
 
-                        // Verifica se já existe um SocialiteUser com esse provider e provider_id
-                        $existingSocialite = SocialiteUser::where('provider', $provider)
-                            ->where('provider_id', $oauthUser->getId())
-                            ->first();
+                //         // Verifica se já existe um SocialiteUser com esse provider e provider_id
+                //         $existingSocialite = SocialiteUser::where('provider', $provider)
+                //             ->where('provider_id', $oauthUser->getId())
+                //             ->first();
 
-                        if ($existingSocialite) {
-                            return $existingSocialite->user;
-                        }
-                        $user = $service->registrarOuLogar($oauthUser);
+                //         if ($existingSocialite) {
+                //             return $existingSocialite->user;
+                //         }
+                //         $user = $service->registrarOuLogar($oauthUser);
 
-                        return $user;
-                    })
+                //         return $user;
+                //     })
             ]);
     }
 }

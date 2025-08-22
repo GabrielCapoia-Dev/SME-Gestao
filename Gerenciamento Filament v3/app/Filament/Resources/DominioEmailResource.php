@@ -17,6 +17,12 @@ use Filament\Tables\Table;
 
 class DominioEmailResource extends Resource
 {
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $value = (string) static::getModel()::count();
@@ -37,6 +43,8 @@ class DominioEmailResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-at-symbol';
 
     protected static ?string $navigationGroup = "Administrativo";
+
+    protected static ?int $navigationSort = -2;
 
     public static ?string $label = 'Dominio Permitido';
 
@@ -67,6 +75,7 @@ class DominioEmailResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->paginated([10, 25, 50, 100])
             ->columns([
                 TextColumn::make('dominio_email')
                     ->label('Email Dominio')

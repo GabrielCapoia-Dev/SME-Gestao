@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
@@ -47,5 +49,19 @@ class DeclaracaoDeHora extends Model
     public function turno()
     {
         return $this->belongsTo(Turno::class);
+    }
+
+    protected function horaInicio(): Attribute
+    {
+        return Attribute::make(
+            set: fn($value) => $value ? Carbon::parse($value)->format('H:i:s') : null,
+        );
+    }
+
+    protected function horaFim(): Attribute
+    {
+        return Attribute::make(
+            set: fn($value) => $value ? Carbon::parse($value)->format('H:i:s') : null,
+        );
     }
 }

@@ -12,26 +12,28 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use App\Models\Servidor;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
+use App\Models\Setor;
+use Illuminate\Validation\Rule;
 
 class UserResource extends Resource
 {
 
     public static function getNavigationBadge(): ?string
     {
-        $value = (string) static::getModel()::count();
+        // Conta apenas usuários/servidores sem email verificado
+        $value = static::getModel()::whereNull('email_verified_at')->count();
 
-        if ($value > 0) {
-            return $value;
-        }
-        return null;
+        return $value > 0 ? (string) $value : null;
     }
 
     public static function getNavigationBadgeTooltip(): ?string
     {
-        return 'Quantidade de usuários cadastrados';
+        return 'Servidores sem e-mail verificado';
     }
+
 
     protected static ?string $model = User::class;
 
@@ -51,28 +53,44 @@ class UserResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
-                    ->label('Nome de usuário')
-                    ->required(),
+                    ->label('Nome de usuário')
+                    ->required()
+                    ->disabled(function (Get $get, ?User $record): bool {
+                        $hasServidorNoRegistro = $record?->servidor()->exists() ?? false;
+                        return filled($get('servidor_id')) || $hasServidorNoRegistro;
+                    })
+                    ->dehydrated(true),
 
                 Forms\Components\TextInput::make('email')
                     ->label('E-mail')
-                    ->unique(ignoreRecord: true)
+                    ->unique(
+                        table: User::class,
+                        column: 'email',
+                        ignoreRecord: true,
+                        modifyRuleUsing: fn(Rule $rule) => $rule->whereNull('deleted_at')
+                    )
                     ->email()
-                    ->required(),
+                    ->required()
+                    ->disabled(function (Get $get, ?User $record): bool {
+                        $hasServidorNoRegistro = $record?->servidor()->exists() ?? false;
+                        return filled($get('servidor_id')) || $hasServidorNoRegistro;
+                    })
+                    ->dehydrated(true),
+
 
                 Forms\Components\TextInput::make('password')
                     ->label('Senha')
                     ->password()
                     ->revealable()
-                    ->dehydrateStateUsing(fn($state) => Hash::make($state))
+                    ->dehydrateStateUsing(fn($state) => \Illuminate\Support\Facades\Hash::make($state))
                     ->dehydrated(fn($state) => filled($state))
                     ->required(fn(string $context): bool => $context === 'create'),
 
                 Forms\Components\Select::make('role')
-                    ->label('Nivel de acesso')
-                    ->relationship('roles', 'name', function (Builder $query) {
+                    ->label('Nível de acesso')
+                    ->relationship('roles', 'name', function (\Illuminate\Database\Eloquent\Builder $query) {
                         /** @var \App\Models\User|null $user */
-                        $user = Auth::user();
+                        $user = \Illuminate\Support\Facades\Auth::user();
                         if (!$user || $user->hasRole('Admin')) {
                             return $query;
                         }
@@ -93,24 +111,144 @@ class UserResource extends Resource
 
                 Forms\Components\Select::make('servidor_id')
                     ->label('Servidor vinculado')
-                    ->options(function () {
-                        return Servidor::whereNull('user_id')
-                            ->pluck('nome', 'id');
-                    })
+                    ->options(
+                        fn() => Servidor::whereNull('user_id')
+                            ->get(['id', 'matricula', 'nome'])
+                            ->mapWithKeys(fn($s) => [
+                                $s->id => "[{$s->matricula}] {$s->nome}",
+                            ])
+                            ->toArray()
+                    )
                     ->searchable()
-                    ->preload()
+                    ->getSearchResultsUsing(function (string $search): array {
+                        return Servidor::query()
+                            ->whereNull('user_id')
+                            ->where(function ($q) use ($search) {
+                                $q->where('nome', 'like', "%{$search}%")
+                                    ->orWhere('matricula', 'like', "%{$search}%");
+                            })
+                            ->limit(50)
+                            ->get(['id', 'matricula', 'nome'])
+                            ->mapWithKeys(fn($s) => [
+                                $s->id => "[{$s->matricula}] {$s->nome}",
+                            ])
+                            ->toArray();
+                    })
                     ->helperText('Só é possível vincular um servidor que ainda não esteja associado a outro usuário.')
                     ->native(false)
                     ->visibleOn('create')
                     ->nullable()
+                    ->live()
+                    ->afterStateUpdated(function (Set $set, $state): void {
+                        if (blank($state)) {
+                            $set('name', null);
+                            $set('email', null);
+                            $set('setor_id', null);
+                            return;
+                        }
+
+                        $servidor = Servidor::with(['setores', 'lotacao.setor'])->find($state);
+
+                        // auto-fill name/email
+                        $set('name', $servidor?->nome);
+                        $set('email', $servidor?->email);
+
+                        // setor: primeiro do pivot, senão o da lotação
+                        $setorId = $servidor?->setores?->first()?->id
+                            ?? $servidor?->lotacao?->setor?->id
+                            ?? null;
+
+                        $set('setor_id', $setorId);
+                    })
                     ->columnSpanFull(),
 
+                Forms\Components\Select::make('setor_id')
+                    ->label('Setor')
+                    ->options(fn() => Setor::query()->pluck('nome', 'id'))
+                    ->searchable()
+                    ->preload()
+                    ->native(false)
+                    ->nullable()
+                    ->required(function (Get $get, ?User $record): bool {
+                        $hasServidorNoRegistro = $record?->servidor()->exists() ?? false;
+                        return ! $hasServidorNoRegistro && blank($get('servidor_id'));
+                    })
+                    ->disabled(function (Get $get, ?User $record): bool {
+                        $hasServidorNoRegistro = $record?->servidor()->exists() ?? false;
+                        return filled($get('servidor_id')) || $hasServidorNoRegistro;
+                    })
+                    ->helperText(function (Get $get, ?User $record): string {
+                        $hasServidorNoRegistro = $record?->servidor()->exists() ?? false;
+                        return (filled($get('servidor_id')) || $hasServidorNoRegistro)
+                            ? 'Setor definido pelo Servidor e bloqueado para edição.'
+                            : 'Selecione um setor.';
+                    })
+                    ->columnSpanFull()
+                    ->visibleOn('create'),
+
+
+                Forms\Components\Section::make('Vínculos')
+                    ->icon('heroicon-o-identification')
+                    ->description('Aqui mostra se o usuário esta vinculado a um local de trabalho ou servidor.')
+                    ->schema([
+
+                        Forms\Components\Placeholder::make('servidor_nome_ro')
+                            ->label('Servidor vinculado')
+                            ->content(function (?User $record): string {
+                                $s = $record?->servidor;
+                                if (! $s) {
+                                    return '—';
+                                }
+
+                                $matricula = $s->matricula ?? 's/ matrícula';
+                                $nome = $s->nome ?? 's/ nome';
+
+                                return "[{$matricula}] {$nome}";
+                            })
+                            ->extraAttributes(['class' => 'text-base font-medium'])
+                            ->visibleOn('edit')
+                            ->visible(function (?User $record): bool {
+                                $s = $record?->servidor;
+                                if (! $s) {
+                                    return false;
+                                }
+
+                                return true;
+                            }),
+
+                        Forms\Components\Placeholder::make('servidor_setor_ro')
+                            ->label('Local de Trabalho')
+                            ->content(function (?User $record) {
+                                if (! $record) {
+                                    return '-';
+                                }
+
+                                // 1) Se tiver servidor, prioriza os setores do servidor
+                                $servidor = $record->servidor;
+                                if ($servidor) {
+                                    if ($servidor->setores && $servidor->setores->isNotEmpty()) {
+                                        return $servidor->setores->pluck('nome')->join(', ');
+                                    }
+                                    // Fallback: setor da lotação do servidor
+                                    return $servidor->lotacao?->setor?->nome ?? '-';
+                                }
+
+                                // 2) Sem servidor? usa o setor vinculado ao usuário (se existir)
+                                return $record->setor?->nome ?? '-';
+                            })
+                            ->extraAttributes(['class' => 'text-base']),
+
+                    ])
+                    ->columns(3)
+                    ->visibleOn('edit')
+                    ->columnSpanFull()
             ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->paginated([10, 25, 50, 100])
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nome de usuário')
@@ -119,12 +257,31 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('email')
                     ->label('E-mail')
                     ->searchable(),
-                    
+
                 Tables\Columns\TextColumn::make('servidor.nome')
                     ->label('Servidor')
                     ->sortable()
                     ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: false),
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('servidor_setor')
+                    ->label('Setor do Servidor')
+                    ->getStateUsing(function (\App\Models\User $record): ?string {
+                        $servidor = $record->servidor;
+                        if (! $servidor) {
+                            return null;
+                        }
+
+                        // Prefer: setores do pivot
+                        if ($servidor->setores && $servidor->setores->isNotEmpty()) {
+                            return $servidor->setores->pluck('nome')->join(', ');
+                        }
+
+                        // Fallback: setor da lotação
+                        return $servidor->lotacao?->setor?->nome ?? null;
+                    })
+                    ->toggleable(isToggledHiddenByDefault: true),
+
 
                 Tables\Columns\TextColumn::make('roles.name')
                     ->label('Nivel de acesso')
@@ -192,6 +349,7 @@ class UserResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+
             ])
             ->headerActions([
                 FilamentExportHeaderAction::make('export')
@@ -236,13 +394,16 @@ class UserResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->whereHas('roles', function ($query) {
-            /** @var \App\Models\User|null $user */
-            $user = Auth::user();
-            if (!$user || $user->hasRole('Admin')) {
-                return $query;
-            }
-            $query->where('name', '!=', 'Admin');
-        });
+        $query = parent::getEloquentQuery()
+            ->with(['servidor.setores', 'servidor.lotacao.setor']);
+
+        /** @var \App\Models\User|null $user */
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        if ($user && ! $user->hasRole('Admin')) {
+            $query->whereHas('roles', fn($q) => $q->where('name', '!=', 'Admin'));
+        }
+
+        return $query;
     }
 }

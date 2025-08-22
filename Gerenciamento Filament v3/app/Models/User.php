@@ -9,6 +9,7 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Activitylog\LogOptions;
@@ -22,6 +23,7 @@ class User extends Authenticatable implements FilamentUser
     use Notifiable;
     use HasRoles;
     use LogsActivity;
+    use SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -34,6 +36,7 @@ class User extends Authenticatable implements FilamentUser
         'email_approved',
         'email_verified_at',
         'password',
+        'setor_id',
     ];
 
     /**
@@ -111,5 +114,10 @@ class User extends Authenticatable implements FilamentUser
     public function servidor()
     {
         return $this->hasOne(Servidor::class);
+    }
+
+    public function setor()
+    {
+        return $this->belongsTo(Setor::class);
     }
 }

@@ -17,6 +17,7 @@ use App\Models\SiglaTurma;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\TipoAtestado;
+use App\Services\ApiFilterService;
 
 class DatabaseSeeder extends Seeder
 {
@@ -43,6 +44,102 @@ class DatabaseSeeder extends Seeder
             'Criar Dominios de Email',
             'Editar Dominios de Email',
             'Excluir Dominios de Email',
+            'Listar Turnos',
+            'Criar Turnos',
+            'Editar Turnos',
+            'Excluir Turnos',
+            'Listar Turmas',
+            'Criar Turmas',
+            'Editar Turmas',
+            'Excluir Turmas',
+            'Listar Tipos de Atestados',
+            'Criar Tipos de Atestados',
+            'Editar Tipos de Atestados',
+            'Excluir Tipos de Atestados',
+            'Listar Setores',
+            'Criar Setores',
+            'Editar Setores',
+            'Excluir Setores',
+            'Listar Servidores',
+            'Criar Servidores',
+            'Editar Servidores',
+            'Excluir Servidores',
+            'Listar Regimes Contratuais',
+            'Criar Regimes Contratuais',
+            'Editar Regimes Contratuais',
+            'Excluir Regimes Contratuais',
+            'Listar Professores',
+            'Criar Professores',
+            'Editar Professores',
+            'Excluir Professores',
+            'Listar Lotações',
+            'Criar Lotações',
+            'Editar Lotações',
+            'Excluir Lotações',
+            'Listar Declarações de Hora',
+            'Criar Declarações de Hora',
+            'Editar Declarações de Hora',
+            'Excluir Declarações de Hora',
+            'Listar Cargos',
+            'Criar Cargos',
+            'Editar Cargos',
+            'Excluir Cargos',
+            'Listar Aulas',
+            'Criar Aulas',
+            'Editar Aulas',
+            'Excluir Aulas',
+            'Listar Afastamentos',
+            'Criar Afastamentos',
+            'Editar Afastamentos',
+            'Excluir Afastamentos'
+        ];
+
+        $rhPermissionsList = [
+            'Listar Cargos',
+            'Criar Cargos',
+            'Editar Cargos',
+            'Excluir Cargos',
+            'Listar Lotações',
+            'Criar Lotações',
+            'Editar Lotações',
+            'Excluir Lotações',
+            'Listar Regimes Contratuais',
+            'Criar Regimes Contratuais',
+            'Editar Regimes Contratuais',
+            'Excluir Regimes Contratuais',
+            'Listar Setores',
+            'Criar Setores',
+            'Editar Setores',
+            'Excluir Setores',
+            'Listar Tipos de Atestados',
+            'Criar Tipos de Atestados',
+            'Editar Tipos de Atestados',
+            'Excluir Tipos de Atestados',
+            'Listar Turnos',
+            'Criar Turnos',
+            'Editar Turnos',
+            'Excluir Turnos',
+        ];
+
+        $UEPermissionsList = [
+            'Listar Afastamentos',
+            'Criar Afastamentos',
+            'Editar Afastamentos',
+            'Excluir Afastamentos',
+            'Listar Declarações de Hora',
+            'Criar Declarações de Hora',
+            'Editar Declarações de Hora',
+            'Excluir Declarações de Hora',
+            'Listar Servidores',
+            'Criar Servidores',
+            'Editar Servidores',
+            'Listar Professores',
+            'Criar Professores',
+            'Editar Professores',
+            'Listar Turmas',
+            'Criar Turmas',
+            'Editar Turmas',
+            'Excluir Turmas',
         ];
 
         // Criação de permissões
@@ -51,15 +148,13 @@ class DatabaseSeeder extends Seeder
         }
 
         // Criação de roles
-        $superAdminRole = Role::firstOrCreate(['name' => 'SuperAdmin']);
-        $adminRole = Role::firstOrCreate(['name' => 'Admin']);
-        Role::firstOrCreate(['name' => 'Usuário']);
-        Role::firstOrCreate(['name' => 'Secretário']);
-        Role::firstOrCreate(['name' => 'Coordenador']);
-        Role::firstOrCreate(['name' => 'Diretor']);
+        $superAdminRole = Role::firstOrCreate(['name' => 'Admin']);
+        $rhRole = Role::firstOrCreate(['name' => 'RH']);
+        $UERole = Role::firstOrCreate(['name' => 'Unidade Educacional']);
 
         $superAdminRole->syncPermissions($permissionsList);
-        $adminRole->syncPermissions($permissionsList);
+        $rhRole->syncPermissions($rhPermissionsList);
+        $UERole->syncPermissions($UEPermissionsList);
 
         // Criação do usuário admin
         $adminUser = User::firstOrCreate(
@@ -72,7 +167,9 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $adminUser->assignRole($adminRole);
+
+        $adminUser->assignRole($superAdminRole);
+
 
         // ========================
         // Criação de Turnos
@@ -95,6 +192,7 @@ class DatabaseSeeder extends Seeder
             'Estatutário',
             'C.L.T',
             'PSS',
+            'Comissionado',
         ];
 
         $regimeContratualIds = [];
@@ -103,6 +201,7 @@ class DatabaseSeeder extends Seeder
             $regimeModel = RegimeContratual::firstOrCreate(['nome' => $regime]);
             $regimeContratualIds[$regime] = $regimeModel->id;
         }
+
 
         // ========================
         // Criação de Cargos
@@ -124,51 +223,6 @@ class DatabaseSeeder extends Seeder
                         'descricao' => "{$cargoNome} - {$regimeNome}",
                     ]
                 );
-            }
-        }
-
-
-        // ========================
-        // Criação de Setores (escolas)
-        // ========================
-        $nomesEscolas = [
-            'Escola Municipal São José',
-            'Colégio Estadual Machado de Assis',
-            'CMEI Pingo de Gente',
-            'Escola Municipal Cecília Meireles',
-            'CMEI Gira Mundo',
-            'Colégio Estadual Santos Dumont',
-            'Escola Municipal Heitor Villa-Lobos',
-            'CMEI Jardim da Alegria',
-            'Escola Municipal Juscelino Kubitschek',
-        ];
-
-        $setores = [];
-
-        foreach ($nomesEscolas as $nome) {
-            $setores[] = Setor::firstOrCreate(
-                ['nome' => $nome],
-                [
-                    'email' => fake()->unique()->safeEmail(),
-                    'telefone' => fake()->phoneNumber(),
-                ]
-            );
-        }
-
-        // ========================
-        // Criação de Lotações
-        // ========================
-        $lotacoes = [];
-
-        foreach ($setores as $setor) {
-            foreach (Cargo::all() as $cargo) {
-                $lotacoes[] = Lotacao::create([
-                    'nome' => "{$cargo->nome} - {$setor->nome}",
-                    'codigo' => fake()->unique()->numerify('013.123.###'),
-                    'descricao' => "Lotação para {$cargo->descricao} em {$setor->nome}",
-                    'setor_id' => $setor->id,
-                    'cargo_id' => $cargo->id,
-                ]);
             }
         }
 
@@ -212,6 +266,9 @@ class DatabaseSeeder extends Seeder
             'Maternal I',
             'Maternal II',
             'Maternal III',
+            'Berçario I',
+            'Berçario II',
+            'Berçario III',
         ];
 
         foreach ($tipos as $nome) {
@@ -259,10 +316,42 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
+
+        // {
+
+        $service = new ApiFilterService();
+        $setoresApi  = $service->obterLocalTrabalho();
+
+        $setores = [];
+
+        foreach ($setoresApi as $setorData) {
+            $setores[] = Setor::create([
+                'nome' => $setorData['local_trabalho'],
+            ]);
+        }
+
+
+        // ========================
+        // Criação de Lotações
+        // ========================
+        $lotacoes = [];
+
+        foreach ($setores as $setor) {
+            foreach (Cargo::all() as $cargo) {
+                $lotacoes[] = Lotacao::create([
+                    'nome' => "{$setor->nome} - {$cargo->nome} - {$cargo->regimeContratual->nome}",
+                    'codigo' => fake()->unique()->numerify('013.123.###.###'),
+                    'descricao' => "Lotação para {$cargo->nome} - {$cargo->regimeContratual->nome} em {$setor->nome}",
+                    'setor_id' => $setor->id,
+                    'cargo_id' => $cargo->id,
+                ]);
+            }
+        }
+
         // ========================
         // Criação de X servidores aleatórios com setor
         // ========================
-        $numeroServidores = 100;
+        $numeroServidores = 500;
 
         for ($i = 1; $i <= $numeroServidores; $i++) {
             $servidor = Servidor::create([
@@ -275,9 +364,9 @@ class DatabaseSeeder extends Seeder
                 'data_admissao' => fake()->date('Y-m-d', '-10 years'),
             ]);
 
-            // Vincular o servidor a 1 a 3 setores aleatórios
-            $setoresAleatorios = collect($setores)->random(rand(1, 3))->pluck('id');
-            $servidor->setores()->attach($setoresAleatorios);
+            // Vincular a exatamente 1 setor aleatório
+            $setorAleatorioId = collect($setores)->random()->id;
+            $servidor->setores()->sync([$setorAleatorioId]);
 
             $turnoNome = $servidor->turno->nome;
 
@@ -324,5 +413,34 @@ class DatabaseSeeder extends Seeder
                 'saida' => $saida,
             ]);
         }
+
+        $rhUser = User::firstOrCreate(
+            ['email' => 'rh@rh.com'],
+            [
+                'name' => 'RH',
+                'password' => Hash::make('123456'),
+                'email_verified_at' => now(),
+                'email_approved' => true,
+                'setor_id' => Setor::inRandomOrder()->first()->id
+            ]
+        );
+        
+        $UEUser = User::firstOrCreate(
+            ['email' => 'unidadeEducacional@unidadeEducacional.com'],
+            [
+                'name' => 'Unidade Educacional',
+                'password' => Hash::make('123456'),
+                'email_verified_at' => now(),
+                'email_approved' => true,
+                'setor_id' => Setor::inRandomOrder()->first()->id
+
+            ]
+        );
+
+
+        $rhUser->assignRole($rhRole);
+        $UEUser->assignRole($UERole);
+
+        // }
     }
 }

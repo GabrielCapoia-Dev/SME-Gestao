@@ -13,13 +13,21 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+
             $table->string('name');
-            $table->string('email')->unique();
+            // removido ->unique() daqui para criarmos unique composto com deleted_at
+            $table->string('email');
+
             $table->boolean('email_approved')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
+
             $table->timestamps();
+            $table->softDeletes(); // cria deleted_at
+
+            // unique composto: permite mesmo email se o anterior estiver soft-deleted
+            $table->unique(['email', 'deleted_at'], 'users_email_deleted_at_unique');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
@@ -43,8 +51,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
 };

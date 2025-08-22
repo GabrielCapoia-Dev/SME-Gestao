@@ -12,18 +12,32 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use AlperenErsoy\FilamentExport\Actions\FilamentExportHeaderAction;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Servidor;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Support\Enums\MaxWidth;
+use App\Filament\Widgets\ResumoServidoresRight;
+use App\Filament\Resources\AtestadoResource\Widgets\ServidorAtestadoChart;
 
 class AtestadoResource extends Resource
 {
     protected static ?string $model = Atestado::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-plus-circle';
+    protected static ?string $navigationIcon = 'heroicon-o-user-minus';
 
     protected static ?string $navigationGroup = 'Gerenciamento de Servidores';
 
     protected static ?string $modelLabel = 'Afastamento';
 
     protected static ?string $pluralModelLabel = 'Afastamentos';
+
+    public static function getWidgets(): array
+    {
+        return [
+            ResumoServidoresRight::class,
+            ServidorAtestadoChart::class,
+        ];
+    }
 
 
 
@@ -33,12 +47,43 @@ class AtestadoResource extends Resource
             ->schema([
                 Forms\Components\Select::make('servidor_id')
                     ->label('Servidor')
-                    ->relationship('servidor', 'nome')
-                    ->getOptionLabelFromRecordUsing(function ($record) {
-                        return "{$record->matricula} - {$record->nome}";
-                    })
                     ->searchable()
                     ->preload()
+                    ->options(function () {
+                        /** @var \App\Models\User|null $user */
+                        $user = Auth::user();
+
+                        $servidoresQuery = Servidor::query();
+
+                        if ($user->servidor) {
+                            $userSetorIds = $user->servidor->setores()->pluck('setors.id')->toArray();
+
+                            if (!empty($userSetorIds)) {
+                                $servidoresQuery->whereHas('setores', function ($query) use ($userSetorIds) {
+                                    $query->whereIn('setors.id', $userSetorIds);
+                                })->pluck('nome', 'id');
+
+                                return $servidoresQuery
+                                    ->get()
+                                    ->mapWithKeys(function ($servidor) {
+                                        return [
+                                            $servidor->id => "[{$servidor->matricula}] {$servidor->nome}"
+                                        ];
+                                    })
+                                    ->toArray();
+                            }
+                        }
+
+                        return $servidoresQuery
+                            ->get()
+                            ->mapWithKeys(function ($servidor) {
+                                return [
+                                    $servidor->id => "[{$servidor->matricula}] {$servidor->nome}"
+                                ];
+                            })
+                            ->toArray();
+                    })
+                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->matricula} - {$record->nome}")
                     ->required(),
 
                 Forms\Components\Select::make('tipo_atestado_id')
@@ -101,6 +146,10 @@ class AtestadoResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->paginated([10, 25, 50, 100])
+            ->filtersLayout(FiltersLayout::AboveContent)
+            ->filtersFormColumns(3)
+            ->filtersFormWidth(MaxWidth::Full)
             ->columns([
                 Tables\Columns\TextColumn::make('servidor.matricula')
                     ->label('Mat. Servidor Afastado')
@@ -197,9 +246,14 @@ class AtestadoResource extends Resource
                 Tables\Filters\Filter::make('updated_periodo')
                     ->label('Período de Atualização')
                     ->form([
-                        Forms\Components\DatePicker::make('data_inicio')->label('De'),
-                        Forms\Components\DatePicker::make('data_fim')->label('Até'),
+                        Forms\Components\DatePicker::make('data_inicio')
+                            ->label('De')
+                            ->columnSpan(1),
+                        Forms\Components\DatePicker::make('data_fim')
+                            ->label('Até')
+                            ->columnSpan(1),
                     ])
+                    ->columns(2) // <- força duas colunas
                     ->query(function (Builder $query, array $data) {
                         if (!empty($data['data_inicio']) && !empty($data['data_fim'])) {
                             $inicio = Carbon::parse($data['data_inicio'])->startOfDay();
@@ -213,6 +267,7 @@ class AtestadoResource extends Resource
                             $query->where('updated_at', '<=', $fim);
                         }
                     }),
+
 
 
             ])

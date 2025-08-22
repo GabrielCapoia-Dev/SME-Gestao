@@ -60,8 +60,6 @@ class GoogleService
             'email_verified_at' => null,
         ]);
 
-        $user->assignRole('Acessar Painel');
-
         \Filament\Notifications\Notification::make()
             ->title('Cadastro Realizado')
             ->body('Usuário cadastrado com sucesso. Solicite aprovação do administrador para acessar o painel.')

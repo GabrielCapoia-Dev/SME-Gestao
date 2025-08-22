@@ -4,15 +4,15 @@ namespace App\Filament\Resources;
 
 use AlperenErsoy\FilamentExport\Actions\FilamentExportHeaderAction;
 use App\Filament\Resources\TurmaResource\Pages;
-use App\Filament\Resources\TurmaResource\RelationManagers;
 use App\Models\Turma;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+
+use Illuminate\Support\Facades\Auth;
+use App\Models\Setor;
 
 class TurmaResource extends Resource
 {
@@ -46,16 +46,44 @@ class TurmaResource extends Resource
                     ->label('Descrição'),
                 Forms\Components\Select::make('setor_id')
                     ->label('Nome da Escola / CMEI')
-                    ->relationship('setor', 'nome')
                     ->searchable()
                     ->preload()
-                    ->required(),
+                    ->required()
+                    ->options(function () {
+                        /** @var \App\Models\User|null $user */
+                        $user = Auth::user();
+
+                        if ($user->servidor) {
+                            $setores = $user->servidor->setores()->select('setors.id', 'setors.nome')->pluck('setors.nome', 'setors.id')->toArray();
+
+
+                            if (!empty($setores)) {
+                                return $setores;
+                            }
+                        }
+
+                        // Fallback: lista todos os setores
+                        return Setor::orderBy('nome')->pluck('nome', 'id')->toArray();
+                    })
+                    ->default(function () {
+                        $user = Auth::user();
+
+                        if ($user->servidor) {
+                            $primeiroSetorId = $user->servidor->setores()->select('setors.id')->pluck('setors.id')->first();
+
+
+                            return $primeiroSetorId; // Preenche com o primeiro setor, se houver
+                        }
+
+                        return null;
+                    }),
             ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->paginated([10, 25, 50, 100])
             ->columns([
                 Tables\Columns\TextColumn::make('nomeTurma.nome')
                     ->label('Nome')

@@ -16,20 +16,7 @@ use Illuminate\Support\Facades\Auth;
 
 class RoleResource extends Resource
 {
-    public static function getNavigationBadge(): ?string
-    {
-        $value = (string) static::getModel()::count();
 
-        if ($value > 0) {
-            return $value;
-        }
-        return null;
-    }
-
-    public static function getNavigationBadgeTooltip(): ?string
-    {
-        return 'Quantidade de niveis de acesso cadastrados';
-    }
 
     protected static ?string $model = Role::class;
 
@@ -67,6 +54,7 @@ class RoleResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->paginated([10, 25, 50, 100])
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nivel de acesso')

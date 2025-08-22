@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ServidorResource\Pages;
 use App\Models\Servidor;
+use App\Models\Setor;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -12,8 +13,13 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use AlperenErsoy\FilamentExport\Actions\FilamentExportHeaderAction;
+use App\Filament\Widgets\ResumoServidoresRight;
+use App\Filament\Widgets\ServidoresPorCargoERegimeChart;
+use Rmsramos\Activitylog\Actions\ActivityLogTimelineTableAction;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Support\Enums\MaxWidth;
 use Carbon\Carbon;
-
+use Illuminate\Support\Facades\Auth;
 use Filament\Tables\Actions\Action;
 
 class ServidorResource extends Resource
@@ -30,48 +36,81 @@ class ServidorResource extends Resource
 
     public static ?string $slug = 'servidores';
 
+    protected static ?int $navigationSort = -3;
+
+
     public static function getTableQuery(): Builder
     {
         return parent::getTableQuery()->with(['setores', 'cargaHoraria', 'lotacao']);
     }
 
+    public static function getWidgets(): array
+    {
+        return [
+            ServidoresPorCargoERegimeChart::class,
+            ResumoServidoresRight::class,
+        ];
+    }
+
     public static function form(Form $form): Form
     {
+
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+
+        $naoAdminOuRH = fn(): bool => ! $user?->hasAnyRole(['Admin', 'RH']);
+        $adminOuRH = fn(): bool => $user?->hasAnyRole(['Admin', 'RH']);
+
+
         return $form
             ->schema([
                 Forms\Components\TextInput::make('matricula')
                     ->unique(ignoreRecord: true)
                     ->label('Matricula')
                     ->numeric()
-                    ->required(),
+                    ->required()
+                    ->disabled($naoAdminOuRH)
+                    ->dehydrated($adminOuRH),
+
                 Forms\Components\TextInput::make('nome')
                     ->label('Nome')
-                    ->required(),
+                    ->required()
+                    ->disabled($naoAdminOuRH)
+                    ->dehydrated($adminOuRH),
+
+                // ✅ PERMITIDO PARA TODOS
                 Forms\Components\TextInput::make('email')
                     ->label('Email')
                     ->unique(ignoreRecord: true)
                     ->email()
                     ->required(),
+
                 Forms\Components\Select::make('cargo_id')
                     ->label('Cargo')
                     ->preload()
                     ->relationship('cargo', 'nome')
                     ->getOptionLabelFromRecordUsing(fn($record) => "{$record->nome} - {$record->regimeContratual->nome}")
                     ->reactive()
-                    ->required(),
+                    ->required()
+                    ->disabled($naoAdminOuRH)
+                    ->dehydrated($adminOuRH),
 
                 Forms\Components\Select::make('turno_id')
                     ->label('Turno')
                     ->preload()
                     ->relationship('turno', 'nome')
-                    ->required(),
+                    ->required()
+                    ->disabled($naoAdminOuRH)
+                    ->dehydrated($adminOuRH),
 
                 Forms\Components\Select::make('setores')
                     ->label('Locais de Trabalho')
                     ->relationship('setores', 'nome')
                     ->preload()
                     ->multiple()
-                    ->required(),
+                    ->required()
+                    ->disabled($naoAdminOuRH)
+                    ->dehydrated($adminOuRH),
 
                 Forms\Components\Select::make('lotacao_id')
                     ->label('Lotação')
@@ -93,12 +132,17 @@ class ServidorResource extends Resource
                     ->getOptionLabelFromRecordUsing(function ($record) {
                         return "{$record->codigo} - {$record->cargo->nome} {$record->cargo->regimeContratual->nome} | {$record->setor->nome}";
                     })
-                    ->required(),
+                    ->required()
+                    ->disabled($naoAdminOuRH)
+                    ->dehydrated($adminOuRH),
 
                 Forms\Components\DatePicker::make('data_admissao')
                     ->label('Data de Admissão')
-                    ->required(),
+                    ->required()
+                    ->disabled($naoAdminOuRH)
+                    ->dehydrated($adminOuRH),
 
+                // ✅ PERMITIDO PARA TODOS
                 Forms\Components\Section::make('Carga Horária')
                     ->schema([
                         Forms\Components\Group::make()
@@ -112,19 +156,19 @@ class ServidorResource extends Resource
                                             ->seconds(false),
 
                                         Forms\Components\TimePicker::make('saida_intervalo')
-                                            ->label('Saída para Almoço')
+                                            ->label('Saída para Almoço (Apenas servidores 40 horas)')
                                             ->seconds(false),
 
                                         Forms\Components\TimePicker::make('entrada_intervalo')
-                                            ->label('Retorno do Almoço')
+                                            ->label('Retorno do Almoço (Apenas servidores 40 horas)')
                                             ->seconds(false),
 
                                         Forms\Components\TimePicker::make('saida')
                                             ->label('Saída')
                                             ->required()
                                             ->seconds(false),
-                                    ])
-                            ])
+                                    ]),
+                            ]),
                     ])
                     ->columns(1)
                     ->collapsed(),
@@ -132,22 +176,39 @@ class ServidorResource extends Resource
     }
 
 
+
     public static function table(Table $table): Table
     {
         return $table
             ->paginated([10, 25, 50, 100])
+            ->filtersLayout(FiltersLayout::AboveContent)
+            ->filtersFormColumns(4)
+            ->filtersFormWidth(MaxWidth::Full)
             ->columns([
-                Tables\Columns\TextColumn::make('setor_id')
-                    ->label('Local de Trabalho')
+                Tables\Columns\TextColumn::make('setores_list')
+                    ->label('Locais de Trabalho')
                     ->getStateUsing(
                         fn($record) =>
-                        $record->setores && $record->setores->count() > 0
-                            ? $record->setores->pluck('nome')->join(', ')
-                            : null
+                        $record->setores->pluck('nome')->join(', ')
                     )
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->searchable()
-                    ->sortable(),
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->whereHas(
+                            'setores',
+                            fn($q) =>
+                            $q->where('nome', 'like', "%{$search}%")
+                        );
+                    })
+                    ->sortable(query: function (Builder $query, string $direction) {
+                        $query->orderBy(
+                            Setor::select('nome')
+                                ->join('servidor_setor', 'setors.id', '=', 'servidor_setor.setor_id')
+                                ->whereColumn('servidor_setor.servidor_id', 'servidores.id')
+                                ->limit(1),
+                            $direction
+                        );
+                    }),
+
 
                 Tables\Columns\TextColumn::make('lotacao.codigo')
                     ->label('Codigo da Lotação')
@@ -223,7 +284,7 @@ class ServidorResource extends Resource
                 Tables\Columns\TextColumn::make('data_admissao')
                     ->label('Data de Admissão')
                     ->sortable()
-                    ->formatStateUsing(fn ($state) => Carbon::parse($state)->format('d/m/Y'))
+                    ->formatStateUsing(fn($state) => Carbon::parse($state)->format('d/m/Y'))
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
 
@@ -278,44 +339,11 @@ class ServidorResource extends Resource
                         })->toArray();
                     }),
 
-                Tables\Filters\Filter::make('entrada_range')
-                    ->form([
-                        Forms\Components\TimePicker::make('entrada_min')
-                            ->seconds(false)
-                            ->label('Entrada Mínima'),
-                        Forms\Components\TimePicker::make('entrada_max')
-                            ->seconds(false)
-                            ->label('Entrada Máxima'),
-                    ])
-                    ->query(function (Builder $query, array $data) {
-                        if (!empty($data['entrada_min'])) {
-                            $query->whereHas('cargaHoraria', fn($q) => $q->where('entrada', '>=', $data['entrada_min']));
-                        }
-                        if (!empty($data['entrada_max'])) {
-                            $query->whereHas('cargaHoraria', fn($q) => $q->where('entrada', '<=', $data['entrada_max']));
-                        }
-                    }),
-
-                Tables\Filters\Filter::make('search')
-                    ->form([
-                        Forms\Components\TextInput::make('search')->label('Buscar'),
-                    ])
-                    ->query(function (Builder $query, array $data) {
-                        if (empty($data['search'])) return;
-
-                        $search = $data['search'];
-
-                        $query->where(function ($q) use ($search) {
-                            $q->where('nome', 'like', "%{$search}%")
-                                ->orWhereHas('cargo', fn($q) => $q->where('nome', 'like', "%{$search}%"))
-                                ->orWhereHas('turno', fn($q) => $q->where('nome', 'like', "%{$search}%"))
-                                ->orWhereHas('cargo.regimeContratual', fn($q) => $q->where('nome', 'like', "%{$search}%"));
-                        });
-                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+
             ])
             ->headerActions([
                 FilamentExportHeaderAction::make('export')

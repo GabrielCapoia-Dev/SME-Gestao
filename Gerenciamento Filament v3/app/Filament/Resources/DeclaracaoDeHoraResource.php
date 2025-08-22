@@ -14,6 +14,8 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
 use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Servidor;
 
 class DeclaracaoDeHoraResource extends Resource
 {
@@ -33,25 +35,43 @@ class DeclaracaoDeHoraResource extends Resource
             ->schema([
                 Forms\Components\Select::make('servidor_id')
                     ->label('Servidor')
-                    ->relationship('servidor', 'nome')
-                    ->getOptionLabelFromRecordUsing(function ($record) {
-                        return "{$record->matricula} - {$record->nome}";
-                    })
                     ->searchable()
                     ->preload()
+                    ->options(function () {
+                        /** @var \App\Models\User|null $user */
+                        $user = Auth::user();
+
+                        if ($user->servidor) {
+                            $userSetorIds = $user->servidor->setores()->pluck('setors.id')->toArray();
+
+                            if (!empty($userSetorIds)) {
+                                return Servidor::whereHas('setores', function ($query) use ($userSetorIds) {
+                                    $query->whereIn('setors.id', $userSetorIds);
+                                })->pluck('nome', 'id');
+                            }
+                        }
+
+                        return Servidor::pluck('nome', 'id');
+                    })
+                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->matricula} - {$record->nome}")
                     ->required(),
+
 
                 Forms\Components\DatePicker::make('data')
                     ->label('Data')
                     ->required(),
 
                 Forms\Components\TimePicker::make('hora_inicio')
+                    ->label('Hora de Início')
                     ->seconds(false)
-                    ->label('Hora de Início'),
+                    ->required()
+                    ->rule('date_format:H:i'),
 
                 Forms\Components\TimePicker::make('hora_fim')
+                    ->label('Hora de Fim')
                     ->seconds(false)
-                    ->label('Hora de Fim'),
+                    ->required()
+                    ->rule('date_format:H:i'),
 
                 Forms\Components\Select::make('turno_id')
                     ->label('Periodo')
@@ -68,6 +88,7 @@ class DeclaracaoDeHoraResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->paginated([10, 25, 50, 100])
             ->columns([
                 Tables\Columns\TextColumn::make('servidor.matricula')
                     ->label('Mat. Servidor Afastado')
@@ -206,6 +227,7 @@ class DeclaracaoDeHoraResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->headerActions([
                 FilamentExportHeaderAction::make('export')
