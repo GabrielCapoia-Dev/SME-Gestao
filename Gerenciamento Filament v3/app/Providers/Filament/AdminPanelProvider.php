@@ -28,6 +28,7 @@ use DutchCodingCompany\FilamentSocialite\Models\SocialiteUser;
 use DutchCodingCompany\FilamentSocialite\Provider;
 use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Contracts\User as SocialiteUserContract;
+use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -49,7 +50,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
-                // Pages\Dashboard::class,
+                Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([])
@@ -68,11 +69,15 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->plugins([
+                FilamentApexChartsPlugin::make(),
+
+
                 ActivitylogPlugin::make()
                     ->label('Registro de Atividade')
                     ->pluralLabel('Registro de Atividades')
                     ->navigationGroup('Administrativo')
                     ->isRestoreActionHidden(true)
+                    ->navigationItem(false)
                     ->isResourceActionHidden(true)
                     ->isRestoreModelActionHidden(true)
                     ->translateSubject(

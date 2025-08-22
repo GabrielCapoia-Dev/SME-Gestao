@@ -12,30 +12,28 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use App\Models\Servidor;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use App\Models\Setor;
-use Rmsramos\Activitylog\Actions\ActivityLogTimelineTableAction;
+use Illuminate\Validation\Rule;
 
 class UserResource extends Resource
 {
 
     public static function getNavigationBadge(): ?string
     {
-        $value = (string) static::getModel()::count();
+        // Conta apenas usuários/servidores sem email verificado
+        $value = static::getModel()::whereNull('email_verified_at')->count();
 
-        if ($value > 0) {
-            return $value;
-        }
-        return null;
+        return $value > 0 ? (string) $value : null;
     }
 
     public static function getNavigationBadgeTooltip(): ?string
     {
-        return 'Quantidade de usuários cadastrados';
+        return 'Servidores sem e-mail verificado';
     }
+
 
     protected static ?string $model = User::class;
 
@@ -65,7 +63,12 @@ class UserResource extends Resource
 
                 Forms\Components\TextInput::make('email')
                     ->label('E-mail')
-                    ->unique(ignoreRecord: true)
+                    ->unique(
+                        table: User::class,
+                        column: 'email',
+                        ignoreRecord: true,
+                        modifyRuleUsing: fn(Rule $rule) => $rule->whereNull('deleted_at')
+                    )
                     ->email()
                     ->required()
                     ->disabled(function (Get $get, ?User $record): bool {
@@ -184,9 +187,9 @@ class UserResource extends Resource
                     ->visibleOn('create'),
 
 
-                Forms\Components\Section::make('Vínculo com Servidor')
+                Forms\Components\Section::make('Vínculos')
                     ->icon('heroicon-o-identification')
-                    ->description('Servidor vinculado a este usuário')
+                    ->description('Aqui mostra se o usuário esta vinculado a um local de trabalho ou servidor.')
                     ->schema([
 
                         Forms\Components\Placeholder::make('servidor_nome_ro')
@@ -203,29 +206,41 @@ class UserResource extends Resource
                                 return "[{$matricula}] {$nome}";
                             })
                             ->extraAttributes(['class' => 'text-base font-medium'])
-                            ->visibleOn('edit'),
+                            ->visibleOn('edit')
+                            ->visible(function (?User $record): bool {
+                                $s = $record?->servidor;
+                                if (! $s) {
+                                    return false;
+                                }
+
+                                return true;
+                            }),
 
                         Forms\Components\Placeholder::make('servidor_setor_ro')
                             ->label('Local de Trabalho')
                             ->content(function (?User $record) {
-                                $servidor = $record?->servidor;
-
-                                if (! $servidor) {
-                                    return '—';
+                                if (! $record) {
+                                    return '-';
                                 }
 
-                                // Prefer setores via pivot
-                                if ($servidor->setores && $servidor->setores->isNotEmpty()) {
-                                    return $servidor->setores->pluck('nome')->join(', ');
+                                // 1) Se tiver servidor, prioriza os setores do servidor
+                                $servidor = $record->servidor;
+                                if ($servidor) {
+                                    if ($servidor->setores && $servidor->setores->isNotEmpty()) {
+                                        return $servidor->setores->pluck('nome')->join(', ');
+                                    }
+                                    // Fallback: setor da lotação do servidor
+                                    return $servidor->lotacao?->setor?->nome ?? '-';
                                 }
 
-                                // Fallback: setor da lotação
-                                return $servidor->lotacao?->setor?->nome ?? '—';
+                                // 2) Sem servidor? usa o setor vinculado ao usuário (se existir)
+                                return $record->setor?->nome ?? '-';
                             })
                             ->extraAttributes(['class' => 'text-base']),
+
                     ])
                     ->columns(3)
-                    ->visibleOn('edit') // mostra só no editar
+                    ->visibleOn('edit')
                     ->columnSpanFull()
             ]);
     }

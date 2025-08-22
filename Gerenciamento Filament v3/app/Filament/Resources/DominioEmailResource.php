@@ -17,6 +17,12 @@ use Filament\Tables\Table;
 
 class DominioEmailResource extends Resource
 {
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $value = (string) static::getModel()::count();

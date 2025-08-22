@@ -13,7 +13,11 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use AlperenErsoy\FilamentExport\Actions\FilamentExportHeaderAction;
+use App\Filament\Widgets\ResumoServidoresRight;
+use App\Filament\Widgets\ServidoresPorCargoERegimeChart;
 use Rmsramos\Activitylog\Actions\ActivityLogTimelineTableAction;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Support\Enums\MaxWidth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Filament\Tables\Actions\Action;
@@ -32,9 +36,20 @@ class ServidorResource extends Resource
 
     public static ?string $slug = 'servidores';
 
+    protected static ?int $navigationSort = -3;
+
+
     public static function getTableQuery(): Builder
     {
         return parent::getTableQuery()->with(['setores', 'cargaHoraria', 'lotacao']);
+    }
+
+    public static function getWidgets(): array
+    {
+        return [
+            ServidoresPorCargoERegimeChart::class,
+            ResumoServidoresRight::class,
+        ];
     }
 
     public static function form(Form $form): Form
@@ -166,6 +181,9 @@ class ServidorResource extends Resource
     {
         return $table
             ->paginated([10, 25, 50, 100])
+            ->filtersLayout(FiltersLayout::AboveContent)
+            ->filtersFormColumns(4)
+            ->filtersFormWidth(MaxWidth::Full)
             ->columns([
                 Tables\Columns\TextColumn::make('setores_list')
                     ->label('Locais de Trabalho')
@@ -321,45 +339,10 @@ class ServidorResource extends Resource
                         })->toArray();
                     }),
 
-                Tables\Filters\Filter::make('entrada_range')
-                    ->form([
-                        Forms\Components\TimePicker::make('entrada_min')
-                            ->seconds(false)
-                            ->label('Entrada Mínima'),
-                        Forms\Components\TimePicker::make('entrada_max')
-                            ->seconds(false)
-                            ->label('Entrada Máxima'),
-                    ])
-                    ->query(function (Builder $query, array $data) {
-                        if (!empty($data['entrada_min'])) {
-                            $query->whereHas('cargaHoraria', fn($q) => $q->where('entrada', '>=', $data['entrada_min']));
-                        }
-                        if (!empty($data['entrada_max'])) {
-                            $query->whereHas('cargaHoraria', fn($q) => $q->where('entrada', '<=', $data['entrada_max']));
-                        }
-                    }),
-
-                Tables\Filters\Filter::make('search')
-                    ->form([
-                        Forms\Components\TextInput::make('search')->label('Buscar'),
-                    ])
-                    ->query(function (Builder $query, array $data) {
-                        if (empty($data['search'])) return;
-
-                        $search = $data['search'];
-
-                        $query->where(function ($q) use ($search) {
-                            $q->where('nome', 'like', "%{$search}%")
-                                ->orWhereHas('cargo', fn($q) => $q->where('nome', 'like', "%{$search}%"))
-                                ->orWhereHas('turno', fn($q) => $q->where('nome', 'like', "%{$search}%"))
-                                ->orWhereHas('cargo.regimeContratual', fn($q) => $q->where('nome', 'like', "%{$search}%"));
-                        });
-                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
-                ActivityLogTimelineTableAction::make('Histórico'),
 
             ])
             ->headerActions([

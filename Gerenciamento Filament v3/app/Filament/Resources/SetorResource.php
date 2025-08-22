@@ -14,6 +14,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Support\Enums\MaxWidth;
 
 class SetorResource extends Resource
 {
@@ -85,6 +87,9 @@ class SetorResource extends Resource
     {
         return $table
             ->paginated([10, 25, 50, 100])
+            ->filtersLayout(FiltersLayout::AboveContent)
+            ->filtersFormColumns(5)
+            ->filtersFormWidth(MaxWidth::Medium)
             ->columns([
                 TextColumn::make('nome')
                     ->label('Nome')
@@ -129,10 +134,9 @@ class SetorResource extends Resource
             ])
             ->filters([
                 Tables\Filters\Filter::make('tipo_escola')
-                    ->label('Tipo de Local')
                     ->form([
                         Forms\Components\CheckboxList::make('tipos')
-                            ->label('Filtrar por')
+                            ->label(false)
                             ->options([
                                 'C.M.E.I' => 'C.M.E.I',
                                 'Escola' => 'Escola',

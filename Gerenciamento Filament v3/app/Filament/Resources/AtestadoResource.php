@@ -14,6 +14,10 @@ use AlperenErsoy\FilamentExport\Actions\FilamentExportHeaderAction;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Servidor;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Support\Enums\MaxWidth;
+use App\Filament\Widgets\ResumoServidoresRight;
+use App\Filament\Resources\AtestadoResource\Widgets\ServidorAtestadoChart;
 
 class AtestadoResource extends Resource
 {
@@ -26,6 +30,14 @@ class AtestadoResource extends Resource
     protected static ?string $modelLabel = 'Afastamento';
 
     protected static ?string $pluralModelLabel = 'Afastamentos';
+
+    public static function getWidgets(): array
+    {
+        return [
+            ResumoServidoresRight::class,
+            ServidorAtestadoChart::class,
+        ];
+    }
 
 
 
@@ -135,6 +147,9 @@ class AtestadoResource extends Resource
     {
         return $table
             ->paginated([10, 25, 50, 100])
+            ->filtersLayout(FiltersLayout::AboveContent)
+            ->filtersFormColumns(3)
+            ->filtersFormWidth(MaxWidth::Full)
             ->columns([
                 Tables\Columns\TextColumn::make('servidor.matricula')
                     ->label('Mat. Servidor Afastado')
@@ -231,9 +246,14 @@ class AtestadoResource extends Resource
                 Tables\Filters\Filter::make('updated_periodo')
                     ->label('Período de Atualização')
                     ->form([
-                        Forms\Components\DatePicker::make('data_inicio')->label('De'),
-                        Forms\Components\DatePicker::make('data_fim')->label('Até'),
+                        Forms\Components\DatePicker::make('data_inicio')
+                            ->label('De')
+                            ->columnSpan(1),
+                        Forms\Components\DatePicker::make('data_fim')
+                            ->label('Até')
+                            ->columnSpan(1),
                     ])
+                    ->columns(2) // <- força duas colunas
                     ->query(function (Builder $query, array $data) {
                         if (!empty($data['data_inicio']) && !empty($data['data_fim'])) {
                             $inicio = Carbon::parse($data['data_inicio'])->startOfDay();
@@ -247,6 +267,7 @@ class AtestadoResource extends Resource
                             $query->where('updated_at', '<=', $fim);
                         }
                     }),
+
 
 
             ])

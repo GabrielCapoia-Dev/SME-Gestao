@@ -11,6 +11,8 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Support\Enums\MaxWidth;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
@@ -66,6 +68,9 @@ class LotacaoResource extends Resource
     {
         return $table
             ->paginated([10, 25, 50, 100])
+            ->filtersLayout(FiltersLayout::AboveContent)
+            ->filtersFormColumns(5)
+            ->filtersFormWidth(MaxWidth::Medium)
             ->columns([
 
                 Tables\Columns\TextColumn::make('codigo')

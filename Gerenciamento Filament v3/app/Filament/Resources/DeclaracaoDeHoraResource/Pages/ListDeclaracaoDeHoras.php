@@ -5,9 +5,8 @@ namespace App\Filament\Resources\DeclaracaoDeHoraResource\Pages;
 use App\Filament\Resources\DeclaracaoDeHoraResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
-use App\Models\Servidor;
+use Illuminate\Support\Facades\Auth;
 
 class ListDeclaracaoDeHoras extends ListRecords
 {
@@ -17,19 +16,21 @@ class ListDeclaracaoDeHoras extends ListRecords
     {
         return [
             Actions\CreateAction::make()
-                ->label('Registrar Afastamento'),
+                ->label('Registrar Declaração de Hora'),
         ];
     }
 
     protected function getTableQuery(): Builder
     {
+        // Evita N+1
         $query = static::getResource()::getEloquentQuery()
-            ->with(['servidor.setores', 'servidor.cargo', 'servidor.lotacao', 'turno']);
+            ->with(['servidor.setores', 'turno']);
 
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
 
-        if ($user->servidor) {
+        // Se o usuário tiver um Servidor vinculado, restringe pelos mesmos setores
+        if ($user?->servidor) {
             $userSetorIds = $user->servidor->setores()->pluck('setors.id')->toArray();
 
             if (!empty($userSetorIds)) {
@@ -37,6 +38,13 @@ class ListDeclaracaoDeHoras extends ListRecords
                     $q->whereIn('setors.id', $userSetorIds);
                 });
             }
+        }
+
+        // Se o usuário tiver um setor próprio, restringe também por ele
+        if ($user?->setor) {
+            $query->whereHas('servidor.setores', function ($q) use ($user) {
+                $q->where('setors.id', $user->setor->id);
+            });
         }
 
         return $query;

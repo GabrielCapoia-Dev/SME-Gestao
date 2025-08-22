@@ -133,23 +133,13 @@ class DatabaseSeeder extends Seeder
             'Listar Servidores',
             'Criar Servidores',
             'Editar Servidores',
-            'Excluir Servidores',
-            'Listar Regimes Contratuais',
-            'Criar Regimes Contratuais',
-            'Editar Regimes Contratuais',
-            'Excluir Regimes Contratuais',
             'Listar Professores',
             'Criar Professores',
             'Editar Professores',
-            'Excluir Professores',
             'Listar Turmas',
             'Criar Turmas',
             'Editar Turmas',
             'Excluir Turmas',
-            'Listar Tipos de Atestados',
-            'Criar Tipos de Atestados',
-            'Editar Tipos de Atestados',
-            'Excluir Tipos de Atestados',
         ];
 
         // Criação de permissões

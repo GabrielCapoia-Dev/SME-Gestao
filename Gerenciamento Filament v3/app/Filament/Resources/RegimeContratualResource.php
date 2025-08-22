@@ -15,6 +15,13 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class RegimeContratualResource extends Resource
 {
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
+
     protected static ?string $model = RegimeContratual::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-chart-bar';
@@ -56,20 +63,7 @@ class RegimeContratualResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-
-                Tables\Filters\SelectFilter::make('cargo_id')
-                    ->label('Cargo')
-                    ->relationship('cargo', 'nome')
-                    ->searchable()
-                    ->preload(),
-                    
-                Tables\Filters\SelectFilter::make('regime_contratual_id')
-                    ->label('Regime Contratual')
-                    ->relationship('cargo.regimeContratual', 'nome')
-                    ->searchable()
-                    ->preload(),
-            ])
+            ->filters([])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
