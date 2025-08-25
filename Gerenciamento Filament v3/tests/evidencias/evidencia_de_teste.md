@@ -36,9 +36,9 @@
 
 Abaixo, uma tabela consolidando todas as evidências de teste com informações principais:
 
-| ID US | Funcionalidade     | Ambiente     | Data       | Responsável | Resultado  | Evidências |
-|-------|-------------------|--------------|------------|-------------|------------|------------|
-| US01  | Cadastro de Usuário | Homologação | 25/08/2025 | Vinicius    | **Aprovado** | |
-| US02  | Login              | Produção    | 25/08/2025 | QA Team     | **Aprovado** | [Video](https://jam.dev/c/09331a80-fb73-4680-abba-aed5ba8c9dd0) |
+| ID US | Funcionalidade     | Data       | Resultado  | Evidências |
+|-------|-------------------|------------|------------|------------|
+| US01  | Cadastro de Usuário  | 25/08/2025  | **Não realizado** | |
+| US02  | Login              | 25/08/2025 | **Aprovado** | [Video](https://jam.dev/c/09331a80-fb73-4680-abba-aed5ba8c9dd0) |
 
 ---
