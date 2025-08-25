@@ -14,9 +14,9 @@
 - **ID:** US01
 - **Descrição:** Como **novo usuário**, quero **cadastrar minha conta**, para **acessar o sistema**.
 - **Critérios de Aceite:**
-  1. O cadastro é feito através do login via Google.
-  2. Exibir mensagem de sucesso após cadastro.
-  3. Enviar notificação de sucesso.
+  - O cadastro é feito através do login via Google.
+  - Exibir mensagem de sucesso após cadastro.
+  - Enviar notificação de sucesso.
 - **Status:** Em desenvolvimento
 - **Evidências:** Ver [tabela de evidências](#evidências-de-teste)
 
@@ -27,6 +27,7 @@
 - **Descrição:** Como **usuário cadastrado**, quero **fazer login no sistema**, para **acessar minhas funcionalidades**.
 - **Critérios de Aceite:**
   - Deve validar e-mail e senha.
+  - Deve ser um usuário com status de ativo.
 - **Status:** Concluído
 - **Evidências:** Ver [tabela de evidências](#evidências-de-teste)
 
