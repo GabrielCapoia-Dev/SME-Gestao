@@ -39,8 +39,8 @@ Abaixo, uma tabela consolidando todas as evidências de teste com informações 
 
 | ID US | Funcionalidade     | Ambiente     | Data       | Responsável | Resultado  | Evidências |
 |-------|-------------------|--------------|------------|-------------|------------|------------|
-| US01  | Cadastro de Usuário | Homologação | 25/08/2025 | Vinicius    | **Aprovado** | ![Print](./evidencias/us01-cadastro.png) <br> [Vídeo](https://link-video.com/us01) |
-| US02  | Login              | Produção    | 25/08/2025 | QA Team     | **Aprovado** | ![Print](./evidencias/us02-login.png) <br> [Jam Dev](https://jam.dev/c/09331a80-fb73-4680-abba-aed5ba8c9dd0) |
+| US01  | Cadastro de Usuário | Homologação | 25/08/2025 | Vinicius    | **Aprovado** | [Vídeo](https://link-video.com/us01) |
+| US02  | Login              | Produção    | 25/08/2025 | QA Team     | **Aprovado** | [Jam Dev](https://jam.dev/c/09331a80-fb73-4680-abba-aed5ba8c9dd0) |
 
 > Use `<br>` dentro da célula para múltiplos links/prints.
 
