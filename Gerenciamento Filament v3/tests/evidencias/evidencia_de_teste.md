@@ -3,7 +3,6 @@
 ## Índice
 - [User Stories](#user-stories)
 - [Evidências de Teste](#evidências-de-teste)
-- [Checklist de Qualidade](#checklist-de-qualidade)
 
 ---
 
@@ -39,30 +38,7 @@ Abaixo, uma tabela consolidando todas as evidências de teste com informações 
 
 | ID US | Funcionalidade     | Ambiente     | Data       | Responsável | Resultado  | Evidências |
 |-------|-------------------|--------------|------------|-------------|------------|------------|
-| US01  | Cadastro de Usuário | Homologação | 25/08/2025 | Vinicius    | **Aprovado** | [Vídeo](https://link-video.com/us01) |
-| US02  | Login              | Produção    | 25/08/2025 | QA Team     | **Aprovado** | [Jam Dev](https://jam.dev/c/09331a80-fb73-4680-abba-aed5ba8c9dd0) |
-
-> Use `<br>` dentro da célula para múltiplos links/prints.
+| US01  | Cadastro de Usuário | Homologação | 25/08/2025 | Vinicius    | **Aprovado** | |
+| US02  | Login              | Produção    | 25/08/2025 | QA Team     | **Aprovado** | [Video](https://jam.dev/c/09331a80-fb73-4680-abba-aed5ba8c9dd0) |
 
 ---
-
-## Checklist de Qualidade
-
-- [x] Cenários de teste documentados  
-- [x] Evidências anexadas (prints/vídeos)  
-- [ ] Cobertura de testes > 80%  
-- [ ] Homologação assinada pelo cliente  
-
----
-
-> **Dica:** Centralizar em tabelas facilita a visualização e manutenção.  
-> Se precisar, você pode quebrar a tabela em várias (ex: uma por módulo ou sprint).
-
----
-
-### **Como usar:**
-- Cada **nova User Story** deve ter uma linha na tabela.
-- Coloque prints e links no campo **Evidências**.
-- Se tiver várias etapas, pode adicionar outra coluna chamada **Passos**.
-
-Quer que eu **gere um modelo já pronto com colunas extras (como Passos Testados, Status e Notas)** para você só ir preenchendo? Quer também que eu **adicione badges/cores para deixar o resultado mais visual no GitHub**?
