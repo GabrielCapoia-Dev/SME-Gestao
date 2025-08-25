@@ -34,7 +34,17 @@
 
 ### US03 - Tentativa de Login com Campos em Branco
 - **ID:** US03
-- **Descrição:** Como **usuário cadastrado**, quero **fazer login no sistema**, para **acessar minhas funcionalidades**.
+- **Descrição:** O **sistema**, valida se os campos estão **preenchidos**, para **acessar o sistema**.
+- **Critérios de Aceite:**
+  - Deve validar e-mail e senha.
+- **Status:** Concluído
+- **Evidências:** Ver [tabela de evidências](#evidências-de-teste)
+
+---
+
+### US04 - Tentativa de Login com email ou senha incorretos
+- **ID:** US04
+- **Descrição:** O **sistema**, valida se os campos estão preenchidos com dados de um **usuário valido**, para **acessar o sistema**.
 - **Critérios de Aceite:**
   - Deve validar e-mail e senha.
 - **Status:** Concluído
@@ -51,5 +61,6 @@ Abaixo, uma tabela consolidando todas as evidências de teste com informações 
 | US01  | Cadastro de Usuário  | 25/08/2025  | **Não realizado** | |
 | US02  | Login              | 25/08/2025 | **Aprovado** | [Video](https://jam.dev/c/09331a80-fb73-4680-abba-aed5ba8c9dd0) |
 | US03  | Tentativa de Login com Campos em Branco              | 25/08/2025 | **Aprovado** | [Video](https://jam.dev/c/f2911f7a-6610-4bee-8668-6088fd190593) |
+| US04  | Login              | 25/08/2025 | **Aprovado** | [Video](https://jam.dev/c/0c5eedda-7130-4611-83b5-a3eb0ffd8cb6) |
 
 ---
