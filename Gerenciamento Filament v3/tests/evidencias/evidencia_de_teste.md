@@ -39,6 +39,6 @@ Abaixo, uma tabela consolidando todas as evidências de teste com informações 
 | ID US | Funcionalidade     | Data       | Resultado  | Evidências |
 |-------|-------------------|------------|------------|------------|
 | US01  | Cadastro de Usuário  | 25/08/2025  | **Não realizado** | |
-| US02  | Login              | 25/08/2025 | **Aprovado** |  <a href="https://jam.dev/c/09331a80-fb73-4680-abba-aed5ba8c9dd0" target="_blank">Vídeo</a> |
+| US02  | Login              | 25/08/2025 | **Aprovado** | [Video](https://jam.dev/c/09331a80-fb73-4680-abba-aed5ba8c9dd0) |
 
 ---
