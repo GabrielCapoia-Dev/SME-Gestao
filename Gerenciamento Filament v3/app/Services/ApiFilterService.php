@@ -220,4 +220,174 @@ class ApiFilterService
             ];
         }
     }
+
+    public function obterDadosApiServidoresFiltradoPorLocalTrabalho(String $entidade, String $exercicio, String $content, String $param): array
+    {
+        $service = new ServidorApiService();
+
+        $locaisProibidos = $this->locaisTrabalhoIndesejados();
+
+        $dados = [];
+
+        try {
+            for ($pagina = 0; $pagina < 3; $pagina++) {
+                $servidores = $service->obterServidores($entidade, $exercicio, $pagina);
+
+                foreach ($servidores[$content] as $servidor) {
+                    $local = $servidor['localTrabalho'] ?? 'N/A';
+
+                    if (in_array($local, $locaisProibidos)) {
+                        continue;
+                    }
+
+                    $dados[] = [
+                        'dados' => $servidor[$param] ?? 'N/A',
+                    ];
+                }
+            }
+
+            return collect($dados)
+                ->unique('dados')
+                ->sortBy('dados', SORT_NATURAL | SORT_FLAG_CASE)
+                ->values()
+                ->toArray();
+        } catch (\Exception $e) {
+            return [
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+
+    private function locaisTrabalhoIndesejados(): array
+    {
+
+        return  [
+            "(EM DESUSO).",
+            "6º SUBGRUPAMENTO DE BOMBEIROS INDEPENDENTES DE UMUARAMA",
+            "ACESF - Administração de Cemitérios e Serviços Funerários",
+            "ADMINISTRAÇÃO- PRÉDIO",
+            "AEROPORTO MUNICIPAL DE UMUARAMA",
+            "AGRICULTURA  - PRÉDIO",
+            "AGÊNCIA DE ATENDIMENTO DO TRABALHO E EMPREGO EM UMUARAMA",
+            "AMBULATORIO MUNICIPAL DE INFECTOLOGIA",
+            "ASSISTENCIA SOCIAL - CENTRO POP",
+            "ASSISTÊNCIA EM SAÚDE",
+            "ATERRO SANITÁRIO",
+            "ATOS OFICIAIS - PRÉDIO",
+            "BANCO DE ALIMENTOS",
+            "CANTINA -  PRÉDIO",
+            "CASA DO EMPREENDEDOR",
+            "CASA DOS CONSELHOS",
+            "CEM - CENTRO DE ESPECIALIDADES MÉDICAS",
+            "CENTRAL FARMACEUTICA",
+            "CENTRO DE EVENTOS PREFEITO ALEXANDRE CERANTO",
+            "CEO - CENTRO DE ESPECIALIDADES ODONTOLÓGICAS",
+            "CONSELHO TUTELAR",
+            "CONTABILIDADE - PRÉDIO",
+            "CONTROLE INTERNO - PRÉDIO",
+            "CENTRAL DE CADASTRO ÚNICO",
+            "CRAM - CENTRO DE REFERÊNCIA EM ATENDIMENTO A MULHER",
+            "CRAS 1",
+            "CRAS 2",
+            "CRAS 3",
+            "CREAS - CENTRO DE REFERÊNCIA ESPECIALIZADO DE ASSISTÊNCIA",
+            "CREAS 2",
+            "CRMI - CENTRO DE REFERENCIA MATERNO INFANTIL",
+            "DIRETORIA DE ARRECADAÇÃO E FISCALIZAÇÃO",
+            "DIRETORIA DE COMPRAS E ALMOXARIFADO",
+            "DIRETORIA DE HABITACAO",
+            "DIRETORIA DE RECURSOS HUMANOS - PRÉDIO",
+            "DIRETORIA DE SERVIÇOS PÚBLICOS",
+            "DIVIDA ATIVA - PRÉDIO",
+            "DIVISÃO DE ARBORIZAÇÃO",
+            "DIVISÃO DE CONTROLE DA PRODUÇÃO AGROPECUÁRIA E DFC",
+            "DIVISÃO DE FISCALIZAÇÃO E RECEITAS MOBILIÁRIAS",
+            "DIVISÃO DE CONTROLE DE DÍVIDA ATIVA",
+            "DIVISÃO DE MANUTENÇÃO DOS PROPRIOS MUNICIPAIS",
+            "DIVISÃO DE POSTURA",
+            "DIVISÃO DE RECEITAS IMOB., CAD. IMOB. E GEORREFERENCIAMENTO",
+            "DIVISÃO RECEITAS IMOBILIÁRIAS",
+            "FISCAIS",
+            "FUNDAÇÃO CULTURAL DE UMUARAMA",
+            "FUNDO DE PREVIDENCIA -  FPMU",
+            "FUNDO MUNICIPAL DE SAÚDE",
+            "FÓRUM ESTADUAL",
+            "GABINETE DO PREFEITO - PRÉDIO",
+            "GABINETE DO SECRETÁRIO",
+            "GUARDAS MUNICIPAIS",
+            "IMPRENSA - PRÉDIO",
+            "INDUSTRIA E COMERCIO - PRÉDIO",
+            "JUNTA DE SERVIÇO MILITAR DE UMUARAMA",
+            "LICITAÇÃO - PRÉDIO",
+            "LOCAL NÃO DEFINIDO",
+            "MAN.DIV.TECNOLOGIA INFORMAÇAO",
+            "MANUTENCAO DA LIMPEZA PUBLICA - GERAL",
+            "MANUTENCAO DA LIMPEZA PUBLICA - ROCADA",
+            "MANUTENCAO DA LIMPEZA PUBLICA DO DISTRITO VILA NOVA UNIAO",
+            "MANUTENÇÃO DA COLETA DE LIXO",
+            "MANUTENÇÃO DA LIMPEZA PUBLICA - COLETA DO LIXO VEGETAL",
+            "MANUTENÇÃO DA LIMPEZA PÚBLICA DE PRAÇAS, BOSQUES E LAGO.",
+            "MANUTENÇÃO DA LIMPEZA PÚBLICA DO DISTRITO DE LOVAT",
+            "MANUTENÇÃO DA LIMPEZA PÚBLICA DO DISTRITO DE NOVA JERUSALEM",
+            "MANUTENÇÃO DA LIMPEZA PÚBLICA DO DISTRITO DE ROBERTO SILVEIR",
+            "MANUTENÇÃO DA LIMPEZA PÚBLICA DO DISTRITO DE SANTA ELIZA",
+            "MANUTENÇÃO DA LIMPEZA PÚBLICA DO DISTRITO DE SERRA DOS DOURA",
+            "MANUTENÇÃO DA LIMPEZA PÚBLICA DO TERMINAL RODOVIÁRIO",
+            "N/A",
+            "NTI - PRÉDIO",
+            "OBRAS - PRÉDIO",
+            "ORÇAMENTO / EMPENHO - Prédio",
+            "OUVIDORIA - PRÉDIO",
+            "PATRIMÔNIO - PRÉDIO",
+            "PLANEJAMENTO ORÇAMENTÁRIO - PRÉDIO",
+            "PLANEJAMENTO URBANO - PRÉDIO",
+            "Polícia Militar Pr - BPFron 4º Companhia",
+            "POSTURA - PRÉDIO",
+            "PRESTANDO SERVIÇOS EM OUTRAS SECRETARIAS",
+            "PROCON - PROTEÇÃO E DEFESA DO CONSUMIDOR",
+            "PROCURADORIA JURÍDICA - PRÉDIO",
+            "PROGRAMA FAMÍLIA ACOLHEDORA",
+            "PROJETOS TÉCNICOS - PRÉDIO",
+            "PRONTO ATENDIMENTO",
+            "PROTOCOLO - PRÉDIO",
+            "SAP - SERVIÇO DE ATENDIMENTO PSICOLÓGICO",
+            "SEC. INOVAÇÃO, CIÊNCIA E TECNOLOGIA- PRÉDIO",
+            "SEC. MUN. DE ADMINISTRAÇÃO(C)",
+            "SEC. MUN. DE MEIO AMBIENTE",
+            "SECRETARIA DE AGRICULTURA",
+            "SECRETARIA DE SAÚDE",
+            "SECRETARIA DE SAÚDE - FROTA",
+            "SECRETARIA DE SAÚDE - M.A.C",
+            "SECRETARIA MUNICIPAL DE ADMINISTRAÇÃO",
+            "SECRETARIA MUNICIPAL DE ASSISTÊNCIA SOCIAL",
+            "SECRETARIA MUNICIPAL DE ESPORTES E LAZER",
+            "SECRETARIA MUNICIPAL DE GABINETE E GESTÃO INTEGRADA",
+            "SECRETARIA MUNICIPAL DE HABITAÇÃO E PROJETOS TÉCNICOS",
+            "SECRETARIA MUNICIPAL DE INTEGRAÇÃO COMUNITÁRIA",
+            "SECRETARIA MUNICIPAL DE OBRAS",
+            "SECRETARIA MUNICIPAL DE SAUDE",
+            "SECRETARIA MUNICIPAL DE SERVIÇOS PÚBLICOS (CC)",
+            "SECRETARIA MUNICIPAL DE SERVIÇOS RODOVIÁRIOS",
+            "SERVICOS RODOVIARIOS ESTRADAS - PATIO",
+            "SERVIÇO DE CONVIVÊNCIA DO IDOSO",
+            "SERVIÇOS GERAIS  - PRÉDIO",
+            "SERVIÇOS RODOVIÁRIOS",
+            "SESMT- CIPA",
+            "TELEFONISTAS",
+            "TERMINAL RODOVIARIO",
+            "TESOURARIA - PRÉDIO",
+            "TIRO DE GUERRA",
+            "UBS - BEM ESTAR",
+            "UBS - CENTRAL",
+            "UBS - COHAPAR III",
+            "UBS - JARDIM LISBOA",
+            "UBS - SANTA ELIZA",
+            "UBS - VITORIA REGIA",
+            "UMUTRANS",
+            "VIGILANCIA EPIDEMIOLOGICA",
+            "VIGILANCIA SANITARIA",
+            "VIGILANTES MUNICIPAIS",
+        ];
+    }
 }

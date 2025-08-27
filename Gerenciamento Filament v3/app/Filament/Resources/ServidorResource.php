@@ -104,7 +104,7 @@ class ServidorResource extends Resource
                     ->dehydrated($adminOuRH),
 
                 Forms\Components\Select::make('setores')
-                    ->label('Locais de Trabalho')
+                    ->label('Local de Trabalho')
                     ->relationship('setores', 'nome')
                     ->preload()
                     ->multiple()
@@ -348,6 +348,7 @@ class ServidorResource extends Resource
             ->headerActions([
                 FilamentExportHeaderAction::make('export')
                     ->defaultFormat('pdf')
+                    ->label('Exportar')
                     ->disableAdditionalColumns()
             ])
             ->bulkActions([

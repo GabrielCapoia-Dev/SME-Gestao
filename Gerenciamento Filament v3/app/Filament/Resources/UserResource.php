@@ -67,15 +67,19 @@ class UserResource extends Resource
                         table: User::class,
                         column: 'email',
                         ignoreRecord: true,
-                        modifyRuleUsing: fn(Rule $rule) => $rule->whereNull('deleted_at')
+                        modifyRuleUsing: fn($rule) => $rule->whereNull('deleted_at')
                     )
                     ->email()
                     ->required()
+                    ->validationMessages([
+                        'unique' => 'Este e-mail já está cadastrado.',
+                    ])
                     ->disabled(function (Get $get, ?User $record): bool {
                         $hasServidorNoRegistro = $record?->servidor()->exists() ?? false;
                         return filled($get('servidor_id')) || $hasServidorNoRegistro;
                     })
                     ->dehydrated(true),
+
 
 
                 Forms\Components\TextInput::make('password')
@@ -169,10 +173,6 @@ class UserResource extends Resource
                     ->preload()
                     ->native(false)
                     ->nullable()
-                    ->required(function (Get $get, ?User $record): bool {
-                        $hasServidorNoRegistro = $record?->servidor()->exists() ?? false;
-                        return ! $hasServidorNoRegistro && blank($get('servidor_id'));
-                    })
                     ->disabled(function (Get $get, ?User $record): bool {
                         $hasServidorNoRegistro = $record?->servidor()->exists() ?? false;
                         return filled($get('servidor_id')) || $hasServidorNoRegistro;
@@ -242,6 +242,15 @@ class UserResource extends Resource
                     ->columns(3)
                     ->visibleOn('edit')
                     ->columnSpanFull()
+                    ->visible(function (?User $record): bool {
+                        $s = $record?->servidor;
+                        if (! $s) {
+                            return false;
+                        }
+
+                        return true;
+                    }),
+
             ]);
     }
 

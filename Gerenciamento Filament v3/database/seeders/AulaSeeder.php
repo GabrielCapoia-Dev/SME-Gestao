@@ -22,13 +22,21 @@ class AulaSeeder extends Seeder
             ['nome' => 'Ensino Religioso',  'descricao' => 'Valores, ética e diversidade cultural.'],
         ];
 
-        foreach ($disciplinas as $d) {
+        $this->command?->info('⏳ Iniciando criação/atualização das aulas...');
+
+        $total = count($disciplinas);
+        foreach ($disciplinas as $i => $d) {
             Aula::firstOrCreate(
                 ['nome' => $d['nome']],
                 ['descricao' => $d['descricao']]
             );
+
+            // animação simples com pontos
+            $pontos = str_repeat('.', $i % 4); // alterna "", ".", "..", "..."
+            $this->command->getOutput()->write("\r⏳ Processando aulas{$pontos} (" . ($i+1) . "/{$total})");
+            usleep(150000); // 0.15s só pro efeito ficar visível
         }
 
-        $this->command?->info('Aulas básicas criadas/atualizadas com sucesso.');
+        $this->command?->getOutput()->writeln("\r✅ Aulas criadas/atualizadas com sucesso! ({$total})           ");
     }
 }

@@ -10,6 +10,18 @@ use App\Models\Aula;
 
 class ProfessorSeeder extends Seeder
 {
+    private function loading($label, $current, $total)
+    {
+        $pontos = str_repeat('.', $current % 4); // "", ".", "..", "..."
+        $this->command->getOutput()->write("\r⏳ {$label}{$pontos} ({$current}/{$total})");
+        usleep(120000); // 0.12s só pra dar efeito
+    }
+
+    private function done($label, $total)
+    {
+        $this->command->getOutput()->writeln("\r✅ {$label} concluído! ({$total})           ");
+    }
+
     public function run(): void
     {
         $servidores = Servidor::all();
@@ -21,11 +33,18 @@ class ProfessorSeeder extends Seeder
             return;
         }
 
-        // Vamos transformar 150 servidores aleatórios em Professores
-        $quantidade = min(150, $servidores->count());
+        // Pergunta no terminal
+        $quantidadeDesejada = (int) $this->command->ask(
+            'Quantos professores deseja criar?',
+            150 // valor padrão
+        );
+
+        // Garante que não escolha mais do que o número de servidores disponíveis
+        $quantidade = min($quantidadeDesejada, $servidores->count());
 
         $servidoresEscolhidos = $servidores->random($quantidade);
 
+        $i = 0;
         foreach ($servidoresEscolhidos as $servidor) {
             $turma = $turmas->random();
             $aula  = $aulas->isNotEmpty() ? $aulas->random() : null;
@@ -35,8 +54,10 @@ class ProfessorSeeder extends Seeder
                 'turma_id'    => $turma->id,
                 'aula_id'     => $aula?->id,
             ]);
+
+            $this->loading('Criando professores', ++$i, $quantidade);
         }
 
-        $this->command->info("Foram criados {$quantidade} professores com turma e aula vinculados.");
+        $this->done('Professores', $quantidade);
     }
 }

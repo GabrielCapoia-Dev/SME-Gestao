@@ -21,8 +21,21 @@ use App\Services\ApiFilterService;
 
 class DatabaseSeeder extends Seeder
 {
+    private function loading($label, $current, $total)
+    {
+        $this->command->getOutput()->write("\r⏳ {$label} ######################## ({$current}/{$total})");
+        usleep(120000); // 0.12s só pra ver o efeito
+    }
+
+    private function done($label, $total)
+    {
+        $this->command->getOutput()->writeln("\r✅ {$label} concluído! ({$total})           ");
+    }
+
+
     public function run(): void
     {
+        $this->command->info('Iniciando o seeding completo do sistema...');
         // Limpa cache das permissões do Spatie
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
@@ -143,9 +156,11 @@ class DatabaseSeeder extends Seeder
         ];
 
         // Criação de permissões
-        foreach ($permissionsList as $permissionName) {
+        foreach ($permissionsList as $i => $permissionName) {
             Permission::firstOrCreate(['name' => $permissionName]);
+            $this->loading('Criando permissões', $i + 1, count($permissionsList));
         }
+        $this->done('Permissões', count($permissionsList));
 
         // Criação de roles
         $superAdminRole = Role::firstOrCreate(['name' => 'Admin']);
@@ -155,6 +170,8 @@ class DatabaseSeeder extends Seeder
         $superAdminRole->syncPermissions($permissionsList);
         $rhRole->syncPermissions($rhPermissionsList);
         $UERole->syncPermissions($UEPermissionsList);
+
+        $this->done('Roles criadas', 3);
 
         // Criação do usuário admin
         $adminUser = User::firstOrCreate(
@@ -167,8 +184,12 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        $this->command?->info('Admin criado com sucesso!');
+
 
         $adminUser->assignRole($superAdminRole);
+
+        $this->command?->info('Passando a regra de admin para o usuário admin');
 
 
         // ========================
@@ -181,13 +202,15 @@ class DatabaseSeeder extends Seeder
             'Integral',
         ];
 
-        foreach ($turnos as $turno) {
+        foreach ($turnos as $i => $turno) {
             Turno::firstOrCreate(['nome' => $turno]);
+            $this->loading('Criando turnos', $i + 1, count($turnos));
         }
+        $this->done('Turnos', count($turnos));
 
-        // ========================
-        // Criação de Regime Contratual
-        // ========================
+        // -------------------------------------------------------
+        // Regimes
+        // -------------------------------------------------------
         $regimes = [
             'Estatutário',
             'C.L.T',
@@ -197,34 +220,40 @@ class DatabaseSeeder extends Seeder
 
         $regimeContratualIds = [];
 
-        foreach ($regimes as $regime) {
+        foreach ($regimes as $i => $regime) {
             $regimeModel = RegimeContratual::firstOrCreate(['nome' => $regime]);
             $regimeContratualIds[$regime] = $regimeModel->id;
+            $this->loading('Criando regimes', $i + 1, count($regimes));
         }
+        $this->done('Regimes contratuais', count($regimes));
 
 
-        // ========================
-        // Criação de Cargos
-        // ========================
-        $cargos = [
-            'Professor',
-            'Auxiliar Serviços Gerais',
-            'Secretário Escolar',
+        // -------------------------------------------------------
+        // Cargos (com restrições por regime)
+        // -------------------------------------------------------
+        $cargosPorRegime = [
+            'Professor'             => ['Estatutário', 'PSS', 'C.L.T'],
+            'Auxiliar Serviços Gerais' => ['Estatutário', 'PSS', 'C.L.T'],
+            'Secretário Escolar'    => ['Estatutário', 'PSS', 'C.L.T'],
+            'Acessor Especial'      => ['Comissionado', 'C.L.T'],
         ];
 
-        foreach ($cargos as $cargoNome) {
-            foreach ($regimeContratualIds as $regimeNome => $regimeId) {
+        $totalCargos = collect($cargosPorRegime)->map(fn($r) => count($r))->sum();
+        $count = 0;
+
+        foreach ($cargosPorRegime as $cargoNome => $regimesValidos) {
+            foreach ($regimesValidos as $regimeNome) {
+                $regimeId = $regimeContratualIds[$regimeNome];
                 Cargo::firstOrCreate(
-                    [
-                        'nome' => $cargoNome,
-                        'regime_contratual_id' => $regimeId,
-                    ],
-                    [
-                        'descricao' => "{$cargoNome} - {$regimeNome}",
-                    ]
+                    ['nome' => $cargoNome, 'regime_contratual_id' => $regimeId],
+                    ['descricao' => "{$cargoNome} - {$regimeNome}"]
                 );
+                $this->loading('Criando cargos', ++$count, $totalCargos);
             }
         }
+        $this->done('Cargos', $totalCargos);
+
+
 
         // ========================
         // Criação de Tipos de Atestados
@@ -246,10 +275,10 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($tipos as $nome) {
-            TipoAtestado::create([
-                'nome' => $nome,
-            ]);
+            TipoAtestado::firstOrCreate(['nome' => $nome]);
+            $this->loading('Criando tipos de atestados', $i + 1, count($tipos));
         }
+        $this->done('Tipos de atestados', count($tipos));
 
         // ========================
         // Criação de Tipos de NomeTurmas
@@ -272,72 +301,49 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($tipos as $nome) {
-            NomeTurma::create([
-                'nome' => $nome,
-            ]);
+            NomeTurma::firstOrCreate(['nome' => $nome]);
+            $this->loading('Criando turmas', $i + 1, count($tipos));
         }
+        $this->done('Turmas', count($tipos));
 
-        // ========================
-        // Criação de Tipos de SiglaTurmas
-        // ========================
-
-        $tipos = [
-            'A',
-            'B',
-            'C',
-            'D',
-            'E',
-            'F',
-            'G',
-            'H',
-            'I',
-            'J',
-            'K',
-            'L',
-            'M',
-            'N',
-            'O',
-            'P',
-            'Q',
-            'R',
-            'S',
-            'T',
-            'U',
-            'V',
-            'W',
-            'X',
-            'Y',
-            'Z',
-        ];
-
-        foreach ($tipos as $nome) {
-            SiglaTurma::create([
-                'nome' => $nome,
-            ]);
+        // -------------------------------------------------------
+        // Sigla Turmas
+        // -------------------------------------------------------
+        $siglas = range('A', 'Z');
+        foreach ($siglas as $i => $nome) {
+            SiglaTurma::firstOrCreate(['nome' => $nome]);
+            $this->loading('Criando siglas de turmas', $i + 1, count($siglas));
         }
+        $this->done('Siglas de turmas', count($siglas));
 
 
         // {
 
+
+
+        // -------------------------------------------------------
+        // Setores via API
+        // -------------------------------------------------------
         $service = new ApiFilterService();
         $setoresApi  = $service->obterLocalTrabalho();
-
         $setores = [];
-
-        foreach ($setoresApi as $setorData) {
-            $setores[] = Setor::create([
-                'nome' => $setorData['local_trabalho'],
-            ]);
+        foreach ($setoresApi as $i => $setorData) {
+            $setores[] = Setor::firstOrCreate(['nome' => $setorData['local_trabalho']]);
+            $this->loading('Criando setores', $i + 1, count($setoresApi));
         }
+        $this->done('Setores', count($setoresApi));
+
 
 
         // ========================
         // Criação de Lotações
         // ========================
         $lotacoes = [];
-
+        $cargosAll = Cargo::all();
+        $totalLotacoes = count($setores) * $cargosAll->count();
+        $count = 0;
         foreach ($setores as $setor) {
-            foreach (Cargo::all() as $cargo) {
+            foreach ($cargosAll as $cargo) {
                 $lotacoes[] = Lotacao::create([
                     'nome' => "{$setor->nome} - {$cargo->nome} - {$cargo->regimeContratual->nome}",
                     'codigo' => fake()->unique()->numerify('013.123.###.###'),
@@ -345,13 +351,21 @@ class DatabaseSeeder extends Seeder
                     'setor_id' => $setor->id,
                     'cargo_id' => $cargo->id,
                 ]);
+                $this->loading('Criando lotações', ++$count, $totalLotacoes);
             }
         }
+        $this->done('Lotações', $totalLotacoes);
+
 
         // ========================
-        // Criação de X servidores aleatórios com setor
+        // Criação de X servidores aleatórios com setor e carga horária
         // ========================
-        $numeroServidores = 500;
+
+        // Pergunta no terminal
+        $numeroServidores = (int) $this->command->ask(
+            'Quantos servidores deseja criar?',
+            500 // valor padrão se só apertar Enter
+        );
 
         for ($i = 1; $i <= $numeroServidores; $i++) {
             $servidor = Servidor::create([
@@ -364,10 +378,10 @@ class DatabaseSeeder extends Seeder
                 'data_admissao' => fake()->date('Y-m-d', '-10 years'),
             ]);
 
-            // Vincular a exatamente 1 setor aleatório
-            $setorAleatorioId = collect($setores)->random()->id;
-            $servidor->setores()->sync([$setorAleatorioId]);
+            // Vincular setor aleatório
+            $servidor->setores()->sync([collect($setores)->random()->id]);
 
+            // Definir carga horária conforme turno
             $turnoNome = $servidor->turno->nome;
 
             switch ($turnoNome) {
@@ -404,7 +418,7 @@ class DatabaseSeeder extends Seeder
                     break;
             }
 
-
+            // Criar carga horária junto com o servidor
             CargaHoraria::create([
                 'servidor_id' => $servidor->id,
                 'entrada' => $entrada,
@@ -412,7 +426,13 @@ class DatabaseSeeder extends Seeder
                 'entrada_intervalo' => $entrada_intervalo,
                 'saida' => $saida,
             ]);
+
+            $this->loading('Criando servidores e cargas horárias', $i, $numeroServidores);
         }
+
+        $this->done('Servidores e cargas horárias', $numeroServidores);
+
+        $this->command->info('✅ Seed completo finalizado com sucesso!');
 
         $rhUser = User::firstOrCreate(
             ['email' => 'rh@rh.com'],
@@ -424,7 +444,7 @@ class DatabaseSeeder extends Seeder
                 'setor_id' => Setor::inRandomOrder()->first()->id
             ]
         );
-        
+
         $UEUser = User::firstOrCreate(
             ['email' => 'unidadeEducacional@unidadeEducacional.com'],
             [
@@ -441,6 +461,17 @@ class DatabaseSeeder extends Seeder
         $rhUser->assignRole($rhRole);
         $UEUser->assignRole($UERole);
 
+        $this->command->info('✅ Usuários RH e UE criados com sucesso!');
+
         // }
+
+        // 👉 Chamar outros seeders
+        $this->call([
+            AtestadoSeeder::class,
+            AulaSeeder::class,
+            DeclaracaoDeHoraSeeder::class,
+            ProfessorSeeder::class,
+            TurmaSeeder::class
+        ]);
     }
 }

@@ -10,10 +10,22 @@ use App\Models\Setor;
 
 class TurmaSeeder extends Seeder
 {
+    private function loading($label, $current, $total)
+    {
+        $pontos = str_repeat('.', $current % 4); // "", ".", "..", "..."
+        $this->command->getOutput()->write("\r⏳ {$label}{$pontos} ({$current}/{$total})");
+        usleep(120000); // 0.12s só pra dar efeito
+    }
+
+    private function done($label, $total)
+    {
+        $this->command->getOutput()->writeln("\r✅ {$label} concluído! ({$total})           ");
+    }
+
     public function run(): void
     {
-        $nomes = NomeTurma::all();
-        $siglas = SiglaTurma::all();
+        $nomes   = NomeTurma::all();
+        $siglas  = SiglaTurma::all();
         $setores = Setor::all();
 
         if ($nomes->isEmpty() || $siglas->isEmpty() || $setores->isEmpty()) {
@@ -21,9 +33,14 @@ class TurmaSeeder extends Seeder
             return;
         }
 
-        // Exemplo: criar 200 turmas aleatórias
-        for ($i = 0; $i < 200; $i++) {
-            $nome = $nomes->random();
+        // Pergunta ao usuário quantas turmas criar
+        $quantidade = (int) $this->command->ask(
+            'Quantas turmas deseja criar?',
+            200 // valor padrão
+        );
+
+        for ($i = 1; $i <= $quantidade; $i++) {
+            $nome  = $nomes->random();
             $sigla = $siglas->random();
             $setor = $setores->random();
 
@@ -33,8 +50,10 @@ class TurmaSeeder extends Seeder
                 'setor_id' => $setor->id,
                 'descricao' => "Turma {$nome->nome} {$sigla->nome} - {$setor->nome}",
             ]);
+
+            $this->loading('Criando turmas', $i, $quantidade);
         }
 
-        $this->command->info('Turmas geradas com sucesso!');
+        $this->done('Turmas', $quantidade);
     }
 }
