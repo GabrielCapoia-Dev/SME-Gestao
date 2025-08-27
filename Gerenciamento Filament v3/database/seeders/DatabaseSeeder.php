@@ -470,8 +470,8 @@ class DatabaseSeeder extends Seeder
             AtestadoSeeder::class,
             AulaSeeder::class,
             DeclaracaoDeHoraSeeder::class,
+            TurmaSeeder::class,
             ProfessorSeeder::class,
-            TurmaSeeder::class
         ]);
     }
 }
