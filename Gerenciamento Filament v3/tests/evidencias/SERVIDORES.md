@@ -29,6 +29,6 @@ Abaixo, uma tabela consolidando todas as evidências de teste com informações 
 
 | ID US | Funcionalidade     | Data       | Resultado  | Evidências |
 |-------|-------------------|------------|------------|------------|
-| US01  | Visualização Dinâmica de dados  | 25/08/2025  | **Aprovado** |  [Video]([https://jam.dev/c/09331a80-fb73-4680-abba-aed5ba8c9dd0](https://jam.dev/c/7153dab5-e2ac-46e8-be8d-56ae16ae1704)) |
+| US01  | Visualização Dinâmica de dados  | 25/08/2025  | **Aprovado** |  [Video](https://jam.dev/c/7153dab5-e2ac-46e8-be8d-56ae16ae1704) |
 
 ---
