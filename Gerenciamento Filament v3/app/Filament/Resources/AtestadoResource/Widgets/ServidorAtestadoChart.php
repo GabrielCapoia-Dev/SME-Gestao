@@ -3,15 +3,17 @@
 namespace App\Filament\Resources\AtestadoResource\Widgets;
 
 use App\Models\Servidor;
+use App\Models\Cargo; // <- importe o model do Cargo
+use Filament\Forms;   // <- importe os componentes de Form
 use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
 
 class ServidorAtestadoChart extends ApexChartWidget
 {
     protected static ?string $chartId = 'servidorAtestadoChart';
     protected static ?string $heading = 'Servidores com Atestado por Cargo e Regime';
-    protected static ?int    $contentHeight = 318;
+    protected static ?int    $contentHeight = 308;
 
-    /** Escuta os IDs vindos da ListAtestados (veja a page abaixo) */
+    /** Livewire v2: $listeners; se estiver no v3 prefira #[On(...)] */
     protected $listeners = ['atestadosFiltradosAtualizados' => 'onIdsAtualizados'];
 
     protected array $totais = [
@@ -23,6 +25,31 @@ class ServidorAtestadoChart extends ApexChartWidget
     public bool $hasFilters = false;
     public ?array $lastOptions = null;
 
+    /**
+     * Add a small form on the widget header to toggle which cargos appear.
+     * Leaving it empty means "show all cargos".
+     *
+     * @return array<int, \Filament\Forms\Components\Component>
+     */
+    protected function getFormSchema(): array
+    {
+        return [
+            Forms\Components\Select::make('cargos')
+                ->label('Exibir cargos')
+                ->multiple()
+                ->preload()
+                ->searchable()
+                // usamos nome->nome para casar com as chaves da matriz ($cargo = $s->cargo->nome)
+                ->options(fn () => Cargo::query()
+                    ->orderBy('nome')
+                    ->pluck('nome', 'nome')
+                    ->all()
+                )
+                ->hint('Vazio = todos os cargos')
+                ->live(), // Filament v3: atualiza o widget na mudança (no v2 use ->reactive())
+        ];
+    }
+
     public function onIdsAtualizados(array $ids = [], bool $hasFilters = false): void
     {
         $this->idsFiltrados = $ids ?? [];
@@ -30,48 +57,87 @@ class ServidorAtestadoChart extends ApexChartWidget
         $this->updateOptions();
     }
 
+    /**
+     * Build ApexCharts options using either the filtered Servidores or fallback.
+     */
     protected function getOptions(): array
     {
-        // 1) Se a lista emitiu IDs de servidores (após filtros), usa exatamente esses:
-        if (!empty($this->idsFiltrados)) {
+        // Captura seleção atual do form (cargos) - vazio = todos
+        $selectedCargos = (array) ($this->filterFormData['cargos'] ?? []);
+
+        if (! empty($this->idsFiltrados)) {
             $servidores = Servidor::query()
                 ->whereIn('id', $this->idsFiltrados)
                 ->with(['cargo.regimeContratual'])
                 ->get();
 
-            $matriz = [];
-            foreach ($servidores as $s) {
-                if (!$s->cargo || !$s->cargo->regimeContratual) continue;
-                $cargo  = $s->cargo->nome;
-                $regime = $s->cargo->regimeContratual->nome;
-                $matriz[$cargo][$regime] = ($matriz[$cargo][$regime] ?? 0) + 1;
+            $matriz = $this->construirMatriz($servidores);
+
+            // aplica filtro por cargos selecionados (se houver)
+            if (! empty($selectedCargos)) {
+                $matriz = array_intersect_key($matriz, array_flip($selectedCargos));
             }
 
             $options = $this->montarGraficoAPartirDaMatriz($matriz);
             return $this->lastOptions = $options;
         }
 
-        // 2) Fallback: 1º load/sem filtros -> todos servidores que têm pelo menos um atestado
+        // Fallback: 1º load/sem filtros -> todos servidores que têm pelo menos um atestado
         $servidores = Servidor::query()
             ->whereHas('atestados')
             ->with(['cargo.regimeContratual'])
             ->get();
 
-        $matriz = [];
-        foreach ($servidores as $s) {
-            if (!$s->cargo || !$s->cargo->regimeContratual) continue;
-            $cargo  = $s->cargo->nome;
-            $regime = $s->cargo->regimeContratual->nome;
-            $matriz[$cargo][$regime] = ($matriz[$cargo][$regime] ?? 0) + 1;
+        $matriz = $this->construirMatriz($servidores);
+
+        if (! empty($selectedCargos)) {
+            $matriz = array_intersect_key($matriz, array_flip($selectedCargos));
         }
 
         $options = $this->montarGraficoAPartirDaMatriz($matriz);
         return $this->lastOptions = $options;
     }
 
-    /** Converte matriz cargo×regime em opções do ApexCharts (igual ao gráfico de Servidores) */
+    /**
+     * Build cargo×regime matrix from a Servidor collection.
+     *
+     * @param \Illuminate\Support\Collection<int, \App\Models\Servidor> $servidores
+     * @return array<string, array<string, int>>
+     */
+    protected function construirMatriz($servidores): array
+    {
+        $matriz = [];
+
+        foreach ($servidores as $s) {
+            if (! $s->cargo || ! $s->cargo->regimeContratual) {
+                continue;
+            }
+            $cargo  = $s->cargo->nome;
+            $regime = $s->cargo->regimeContratual->nome;
+
+            $matriz[$cargo][$regime] = ($matriz[$cargo][$regime] ?? 0) + 1;
+        }
+
+        return $matriz;
+    }
+
+    /** Converts matrix into ApexCharts options (unchanged from your version) */
     protected function montarGraficoAPartirDaMatriz(array $dados): array
     {
+        // Se não houver dados após o filtro, devolve gráfico vazio “elegante”
+        if ($dados === []) {
+            $this->totais = ['geral' => 0, 'por_regime' => []];
+            $this->dispatch('totaisAtualizados', $this->totais);
+
+            return [
+                'chart' => ['type' => 'bar', 'height' => 250, 'stacked' => false, 'toolbar' => ['show' => false]],
+                'xaxis' => ['categories' => []],
+                'series' => [],
+                'legend' => ['position' => 'top'],
+                'noData' => ['text' => 'Sem dados para os cargos selecionados'],
+            ];
+        }
+
         $cargos = array_keys($dados);
         sort($cargos);
 
@@ -103,12 +169,10 @@ class ServidorAtestadoChart extends ApexChartWidget
             'geral' => $totalGeral,
             'por_regime' => $totaisPorRegime,
         ];
-
-        // >>> importante: mesmo nome de evento que o Resumo já escuta
         $this->dispatch('totaisAtualizados', $this->totais);
 
         return [
-            'chart' => ['type' => 'bar', 'height' => 250, 'stacked' => false, 'toolbar' => ['show' => false]],
+            'chart' => ['type' => 'bar', 'height' => 300, 'stacked' => false, 'toolbar' => ['show' => false]],
             'xaxis' => ['categories' => $cargos, 'axisBorder' => ['show' => false], 'axisTicks' => ['show' => false]],
             'series' => $series,
             'legend' => ['position' => 'top'],

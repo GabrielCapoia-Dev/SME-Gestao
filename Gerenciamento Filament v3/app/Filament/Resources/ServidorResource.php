@@ -13,13 +13,13 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use AlperenErsoy\FilamentExport\Actions\FilamentExportHeaderAction;
-use App\Filament\Widgets\ResumoServidoresRight;
 use App\Filament\Widgets\ServidoresPorCargoERegimeChart;
 use Rmsramos\Activitylog\Actions\ActivityLogTimelineTableAction;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Support\Enums\MaxWidth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use App\Filament\Widgets\ResumoGraficoServidores;
 use Filament\Tables\Actions\Action;
 
 class ServidorResource extends Resource
@@ -48,7 +48,7 @@ class ServidorResource extends Resource
     {
         return [
             ServidoresPorCargoERegimeChart::class,
-            ResumoServidoresRight::class,
+            ResumoGraficoServidores::class,
         ];
     }
 

@@ -5,7 +5,7 @@ namespace App\Filament\Resources\AtestadoResource\Pages;
 
 use App\Filament\Resources\AtestadoResource;
 use App\Filament\Resources\AtestadoResource\Widgets\ServidorAtestadoChart;
-use App\Filament\Widgets\ResumoServidoresRight;
+use App\Filament\Widgets\ResumoGraficoServidores;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,7 +27,7 @@ class ListAtestados extends ListRecords
         // Nova instância do Resumo: vai ouvir 'totaisAtualizados' emitido pelo gráfico acima
         return [
             ServidorAtestadoChart::class,
-            ResumoServidoresRight::class,
+            ResumoGraficoServidores::class,
         ];
     }
 

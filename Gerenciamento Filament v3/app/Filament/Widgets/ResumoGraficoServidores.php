@@ -4,7 +4,7 @@ namespace App\Filament\Widgets;
 
 use Filament\Widgets\Widget;
 
-class ResumoServidoresRight extends Widget
+class ResumoGraficoServidores extends Widget
 {
     protected static ?string $heading = 'Resumo dos Dados';
     protected static string $view = 'filament.widgets.resumo-servidores-right';

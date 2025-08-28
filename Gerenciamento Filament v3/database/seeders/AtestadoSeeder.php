@@ -22,7 +22,11 @@ class AtestadoSeeder extends Seeder
             return;
         }
 
-        $total = 100;
+        $total = (int) $this->command->ask(
+            'Quantos atestados deseja criar?',
+            500
+        );
+
         for ($i = 0; $i < $total; $i++) {
             $servidor = $servidores->random();
             $tipo = $tiposAtestado->random();

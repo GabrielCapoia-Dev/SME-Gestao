@@ -16,8 +16,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Servidor;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Support\Enums\MaxWidth;
-use App\Filament\Widgets\ResumoServidoresRight;
 use App\Filament\Resources\AtestadoResource\Widgets\ServidorAtestadoChart;
+use App\Filament\Widgets\ResumoGraficoServidores;
 
 class AtestadoResource extends Resource
 {
@@ -34,7 +34,7 @@ class AtestadoResource extends Resource
     public static function getWidgets(): array
     {
         return [
-            ResumoServidoresRight::class,
+            ResumoGraficoServidores::class,
             ServidorAtestadoChart::class,
         ];
     }
