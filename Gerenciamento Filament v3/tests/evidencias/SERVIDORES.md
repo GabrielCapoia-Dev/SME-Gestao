@@ -75,18 +75,42 @@
 - **Status:** Concluído  
 - **Evidências:** Ver [tabela de evidências](#evidências-de-teste)
 
+
+### US08 - Remoção de Servidor
+- **ID:** US08
+- **Descrição:** Como **administrador ou RH**, quero remover servidores individualmente ou em lote, para manter os registros atualizados.
+- **Critérios de Aceite:**
+  - Deve ser possível excluir um servidor individualmente.
+  - Deve ser possível selecionar vários servidores para exclusão em lote.
+  - Usuário deve possuir a permissão `Excluir Servidores`.
+- **Status:** Concluído
+- **Evidências:** Ver [tabela de evidências](#evidências-de-teste)
+
+  ### US09 - Configuração de Paginação e Colunas
+- **ID:** US09
+- **Descrição:** Como **usuário**, quero definir quantos itens são exibidos por página e alternar quais colunas estão visíveis, para personalizar a visualização da listagem.
+- **Critérios de Aceite:**
+  - O sistema deve oferecer opções de exibição de 10, 25, 50 ou 100 itens por página.
+  - A alteração da quantidade de itens por página deve atualizar a listagem imediatamente.
+  - Deve existir opção de "toggle" para ocultar ou exibir colunas.
+  - A alternância de colunas deve refletir imediatamente na tabela.
+- **Status:** Concluído
+- **Evidências:** Ver [tabela de evidências](#evidências-de-teste)
+
 ---
 
 ## Evidências de Teste
 
 | ID US | Funcionalidade                      | Data       | Resultado  | Evidências |
-|-------|------------------------------------|------------|------------|------------|
-| US01  | Visualização Dinâmica de dados     | --/--/---- | Em aberto  | [Video]() |
-| US02  | Cadastro de Servidor               | --/--/---- | Em aberto  | [Video]() |
-| US03  | Definição de Carga Horária         | --/--/---- | Em aberto  | [Video]() |
-| US04  | Filtrar Servidores                 | --/--/---- | Em aberto  | [Video]() |
-| US05  | Exportação da Listagem             | --/--/---- | Em aberto  | [Video]() |
-| US06  | Controle de Acesso por Setor       | --/--/---- | Em aberto  | [Video]() |
-| US07  | Resumo por Regime Contratual       | --/--/---- | Em aberto  | [Video]() |
+|-------|-------------------------------------|------------|------------|------------|
+| US01  | Visualização Dinâmica de dados      | --/--/---- | Em aberto  | [Video]() |
+| US02  | Cadastro de Servidor                | --/--/---- | Em aberto  | [Video]() |
+| US03  | Definição de Carga Horária          | --/--/---- | Em aberto  | [Video]() |
+| US04  | Filtrar Servidores                  | --/--/---- | Em aberto  | [Video]() |
+| US05  | Exportação da Listagem              | --/--/---- | Em aberto  | [Video]() |
+| US06  | Controle de Acesso por Setor        | --/--/---- | Em aberto  | [Video]() |
+| US07  | Resumo por Regime Contratual        | --/--/---- | Em aberto  | [Video]() |
+| US08  | Remoção de Servidor                 | --/--/---- | Em aberto  | [Video]() |
+| US09  | Configuração de Paginação e Colunas | --/--/---- | Em aberto  | [Video]() |
 
 ---
