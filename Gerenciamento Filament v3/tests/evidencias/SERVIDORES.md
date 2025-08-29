@@ -76,12 +76,17 @@
 - **Evidências:** Ver [tabela de evidências](#evidências-de-teste)
 
 ---
+
 ## Evidências de Teste
 
-Abaixo, uma tabela consolidando todas as evidências de teste com informações principais:
-
-| ID US | Funcionalidade     | Data       | Resultado  | Evidências |
-|-------|-------------------|------------|------------|------------|
-| US01  | Visualização Dinâmica de dados  | 27/08/2025  | **Aprovado** |  [Video](https://jam.dev/c/7153dab5-e2ac-46e8-be8d-56ae16ae1704) |
+| ID US | Funcionalidade                      | Data       | Resultado  | Evidências |
+|-------|------------------------------------|------------|------------|------------|
+| US01  | Visualização Dinâmica de dados     | --/--/---- | Em aberto  | [Video]() |
+| US02  | Cadastro de Servidor               | --/--/---- | Em aberto  | [Video]() |
+| US03  | Definição de Carga Horária         | --/--/---- | Em aberto  | [Video]() |
+| US04  | Filtrar Servidores                 | --/--/---- | Em aberto  | [Video]() |
+| US05  | Exportação da Listagem             | --/--/---- | Em aberto  | [Video]() |
+| US06  | Controle de Acesso por Setor       | --/--/---- | Em aberto  | [Video]() |
+| US07  | Resumo por Regime Contratual       | --/--/---- | Em aberto  | [Video]() |
 
 ---
