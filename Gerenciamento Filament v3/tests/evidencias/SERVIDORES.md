@@ -103,7 +103,7 @@
 
 | ID US | Funcionalidade                      | Data       | Resultado  | Evidências |
 |-------|-------------------------------------|------------|------------|------------|
-| US01  | Visualização Dinâmica de dados      | --/--/---- | Em aberto  | [Video]() |
+| [US01](#us01)  | Visualização Dinâmica de dados      | --/--/---- | Em aberto  | [Video]() |
 | US02  | Cadastro de Servidor                | --/--/---- | Em aberto  | [Video]() |
 | US03  | Definição de Carga Horária          | --/--/---- | Em aberto  | [Video]() |
 | US04  | Filtrar Servidores                  | --/--/---- | Em aberto  | [Video]() |
