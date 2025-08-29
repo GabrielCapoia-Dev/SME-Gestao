@@ -126,11 +126,11 @@ class ServidorResource extends Resource
                             ->pluck('nome', 'id')
                             ->map(function ($nome, $id) {
                                 $lotacao = \App\Models\Lotacao::find($id);
-                                return "{$lotacao->codigo} - {$lotacao->cargo->nome} {$lotacao->cargo->regimeContratual->nome} |{$lotacao->setor->nome}";
+                                return "{$lotacao->codigo} - {$lotacao->cargo?->nome} {$lotacao->cargo?->regimeContratual->nome} |{$lotacao->setor->nome}";
                             });
                     })
                     ->getOptionLabelFromRecordUsing(function ($record) {
-                        return "{$record->codigo} - {$record->cargo->nome} {$record->cargo->regimeContratual->nome} | {$record->setor->nome}";
+                        return "{$record->codigo} - {$record->cargo?->nome} {$record->cargo?->regimeContratual->nome} | {$record->setor->nome}";
                     })
                     ->required()
                     ->disabled($naoAdminOuRH)
@@ -219,12 +219,14 @@ class ServidorResource extends Resource
                 Tables\Columns\TextColumn::make('lotacao.nome')
                     ->label('Nome da Lotação')
                     ->toggleable(isToggledHiddenByDefault: true)
+                    ->getStateUsing(fn($record) => $record->lotacao?->nome ?? '-')
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('lotacao.setor.nome')
                     ->label('Local de Lotação')
                     ->toggleable(isToggledHiddenByDefault: true)
+                    ->getStateUsing(fn($record) => $record->lotacao?->setor?->nome ?? '-')
                     ->searchable()
                     ->sortable(),
 
@@ -248,12 +250,14 @@ class ServidorResource extends Resource
                     ->sortable()
                     ->label('Cargo')
                     ->toggleable(isToggledHiddenByDefault: true)
+                    ->getStateUsing(fn($record) => $record->cargo?->nome ?? '-')
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('cargo.regimeContratual.nome')
                     ->sortable()
                     ->label('Regime Contratual')
                     ->toggleable(isToggledHiddenByDefault: true)
+                    ->getStateUsing(fn($record) => $record->cargo?->regimeContratual?->nome ?? '-')
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('turno.nome')
@@ -333,11 +337,13 @@ class ServidorResource extends Resource
                     ->preload()
                     ->options(function () {
                         return \App\Models\Lotacao::with('setor')->get()->mapWithKeys(function ($lotacao) {
+                            $setorNome = $lotacao->setor?->nome ?? '-';
                             return [
-                                $lotacao->id => "{$lotacao->codigo} - {$lotacao->nome} ({$lotacao->setor->nome})"
+                                $lotacao->id => "{$lotacao->codigo} - {$lotacao->nome} ({$setorNome})"
                             ];
                         })->toArray();
                     }),
+
 
             ])
             ->actions([

@@ -3,27 +3,26 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Services\ApiFilterService;
 use App\Services\GoogleSheetService;
 
-class ExportarServidoresGoogleSheets extends Command
+class ImportarLotacoesGoogleSheets extends Command
 {
-    protected $signature = 'exportar:servidores-planilha';
-    protected $description = 'Exporta os dados dos servidores para a planilha Google Sheets';
+    protected $signature = 'lotacoes-planilha';
+    protected $description = 'Importa os dados de lotações da planilha Google Sheets e salva no banco';
 
     public function handle()
     {
-        $apiService = new ApiFilterService();
         $googleSheet = new GoogleSheetService();
 
-        // Chama a função com filtro de local de trabalho
-        $dados = $apiService->obterDadosApiServidoresFiltradoPorLocalTrabalho(1, 2025, 'content', 'descricaoLotacao');
-
+        // ID da planilha (o mesmo que você usou)
         $spreadsheetId = '1bawy7mtk34OVPans34FcJKa8HdH2wHxjW3YGlHPSPOk';
-        $range = 'dados!A1';
 
-        $googleSheet->salvarDadosNaPlanilha($dados, $spreadsheetId, $range);
+        try {
+            $resultado = $googleSheet->importarLotacoes($spreadsheetId, 'dados!A:D');
 
-        $this->info('Exportação concluída com sucesso com filtro de local de trabalho!');
+            $this->info($resultado['message'] ?? 'Importação concluída!');
+        } catch (\Exception $e) {
+            $this->error('Erro durante a importação: ' . $e->getMessage());
+        }
     }
 }

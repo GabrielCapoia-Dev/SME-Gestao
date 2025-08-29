@@ -18,6 +18,7 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\TipoAtestado;
 use App\Services\ApiFilterService;
+use App\Services\GoogleSheetService;
 
 class DatabaseSeeder extends Seeder
 {
@@ -232,10 +233,9 @@ class DatabaseSeeder extends Seeder
         // Cargos (com restrições por regime)
         // -------------------------------------------------------
         $cargosPorRegime = [
-            'Professor'             => ['Estatutário', 'PSS', 'C.L.T'],
-            'Auxiliar Serviços Gerais' => ['Estatutário', 'PSS', 'C.L.T'],
-            'Secretário Escolar'    => ['Estatutário', 'PSS', 'C.L.T'],
-            'Acessor Especial'      => ['Comissionado', 'C.L.T'],
+            'Professor'             => ['Estatutário', 'PSS', 'C.L.T', 'Comissionado'],
+            'Auxiliar de Serviços Gerais e Secretário Escolar' => ['Estatutário', 'PSS', 'C.L.T'],
+            'Acessor Especial'      => ['Comissionado'],
         ];
 
         $totalCargos = collect($cargosPorRegime)->map(fn($r) => count($r))->sum();
@@ -335,26 +335,53 @@ class DatabaseSeeder extends Seeder
 
 
 
-        // ========================
-        // Criação de Lotações
-        // ========================
-        $lotacoes = [];
-        $cargosAll = Cargo::all();
-        $totalLotacoes = count($setores) * $cargosAll->count();
-        $count = 0;
-        foreach ($setores as $setor) {
-            foreach ($cargosAll as $cargo) {
-                $lotacoes[] = Lotacao::create([
-                    'nome' => "{$setor->nome} - {$cargo->nome} - {$cargo->regimeContratual->nome}",
-                    'codigo' => fake()->unique()->numerify('013.123.###.###'),
-                    'descricao' => "Lotação para {$cargo->nome} - {$cargo->regimeContratual->nome} em {$setor->nome}",
-                    'setor_id' => $setor->id,
-                    'cargo_id' => $cargo->id,
-                ]);
-                $this->loading('Criando lotações', ++$count, $totalLotacoes);
+        // -------------------------------------------------------
+        // Importar lotações a partir da planilha Google Sheets
+        // -------------------------------------------------------
+        $spreadsheetId = '1bawy7mtk34OVPans34FcJKa8HdH2wHxjW3YGlHPSPOk';
+        $googleSheet = new GoogleSheetService();
+
+        try {
+            // 1) Importa as lotações com código, descrição e setor_id
+            $resultado = $googleSheet->importarLotacoes($spreadsheetId, 'dados!A:D');
+            $this->command->info($resultado['message'] ?? '✅ Lotações importadas com sucesso!');
+
+            // 2) Vincula cargos às lotações com base na planilha
+            $resultadoVinculo = $googleSheet->vincularCargosEmLotacoes($spreadsheetId, 'dados!A:D');
+            $this->command->info($resultadoVinculo['message'] ?? '✅ Cargos vinculados com sucesso!');
+
+            // Caso existam registros não encontrados, mostra aviso
+            if (!empty($resultadoVinculo['nao_encontrados'])) {
+                foreach ($resultadoVinculo['nao_encontrados'] as $erro) {
+                    $this->command->warn("⚠️ {$erro}");
+                }
             }
+        } catch (\Exception $e) {
+            $this->command->error('❌ Erro ao importar/vincular lotações: ' . $e->getMessage());
         }
-        $this->done('Lotações', $totalLotacoes);
+
+
+
+        // // ========================
+        // // Criação de Lotações
+        // // ========================
+        // $lotacoes = [];
+        // $cargosAll = Cargo::all();
+        // $totalLotacoes = count($setores) * $cargosAll->count();
+        // $count = 0;
+        // foreach ($setores as $setor) {
+        //     foreach ($cargosAll as $cargo) {
+        //         $lotacoes[] = Lotacao::create([
+        //             'nome' => "{$setor->nome} - {$cargo->nome} - {$cargo->regimeContratual->nome}",
+        //             'codigo' => fake()->unique()->numerify('013.123.###.###'),
+        //             'descricao' => "Lotação para {$cargo->nome} - {$cargo->regimeContratual->nome} em {$setor->nome}",
+        //             'setor_id' => $setor->id,
+        //             'cargo_id' => $cargo->id,
+        //         ]);
+        //         $this->loading('Criando lotações', ++$count, $totalLotacoes);
+        //     }
+        // }
+        // $this->done('Lotações', $totalLotacoes);
 
 
         // ========================
@@ -366,6 +393,9 @@ class DatabaseSeeder extends Seeder
             'Quantos servidores deseja criar?',
             500 // valor padrão se só apertar Enter
         );
+
+        $lotacoes = \App\Models\Lotacao::all();
+
 
         for ($i = 1; $i <= $numeroServidores; $i++) {
             $servidor = Servidor::create([
