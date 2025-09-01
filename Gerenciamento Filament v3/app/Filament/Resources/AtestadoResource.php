@@ -271,7 +271,6 @@ class AtestadoResource extends Resource
                     }),
 
 
-
             ])
 
             ->actions([

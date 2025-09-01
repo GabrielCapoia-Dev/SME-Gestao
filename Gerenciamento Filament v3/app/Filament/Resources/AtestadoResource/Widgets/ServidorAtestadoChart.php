@@ -131,7 +131,7 @@ class ServidorAtestadoChart extends ApexChartWidget
             $this->dispatch('totaisAtualizados', $this->totais);
 
             return [
-                'chart' => ['type' => 'bar', 'height' => 250, 'stacked' => false, 'toolbar' => ['show' => false]],
+                'chart' => ['type' => 'bar', 'height' => 250, 'id' => static::$chartId, 'stacked' => false, 'toolbar' => ['show' => false]],
                 'xaxis' => ['categories' => []],
                 'series' => [],
                 'legend' => ['position' => 'top'],
@@ -173,7 +173,7 @@ class ServidorAtestadoChart extends ApexChartWidget
         $this->dispatch('totaisAtualizados', $this->totais);
 
         return [
-            'chart' => ['type' => 'bar', 'height' => 300, 'stacked' => false, 'toolbar' => ['show' => false]],
+            'chart' => ['type' => 'bar', 'height' => 300, 'id' => static::$chartId, 'stacked' => false, 'toolbar' => ['show' => false]],
             'xaxis' => ['categories' => $cargos, 'axisBorder' => ['show' => false], 'axisTicks' => ['show' => false]],
             'series' => $series,
             'legend' => ['position' => 'top'],
