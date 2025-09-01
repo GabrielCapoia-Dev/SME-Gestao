@@ -5,6 +5,7 @@ namespace App\Filament\Resources\AtestadoResource\Pages;
 
 use App\Filament\Resources\AtestadoResource;
 use App\Filament\Resources\AtestadoResource\Widgets\ServidorAtestadoChart;
+use App\Filament\Resources\AtestadoResource\Widgets\AtestadosPorTiposChart;
 use App\Filament\Widgets\ResumoGraficoServidores;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
@@ -28,6 +29,7 @@ class ListAtestados extends ListRecords
         return [
             ServidorAtestadoChart::class,
             ResumoGraficoServidores::class,
+            AtestadosPorTiposChart::class
         ];
     }
 

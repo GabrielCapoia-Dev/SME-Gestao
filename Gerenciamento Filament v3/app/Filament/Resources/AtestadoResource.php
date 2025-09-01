@@ -17,6 +17,7 @@ use App\Models\Servidor;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Support\Enums\MaxWidth;
 use App\Filament\Resources\AtestadoResource\Widgets\ServidorAtestadoChart;
+use App\Filament\Resources\AtestadoResource\Widgets\AtestadosPorTiposChart;
 use App\Filament\Widgets\ResumoGraficoServidores;
 
 class AtestadoResource extends Resource
@@ -34,8 +35,9 @@ class AtestadoResource extends Resource
     public static function getWidgets(): array
     {
         return [
-            ResumoGraficoServidores::class,
-            ServidorAtestadoChart::class,
+            // ResumoGraficoServidores::class,
+            // ServidorAtestadoChart::class,
+            AtestadosPorTiposChart::class
         ];
     }
 

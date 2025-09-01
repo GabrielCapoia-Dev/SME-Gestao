@@ -3,8 +3,8 @@
 namespace App\Filament\Resources\AtestadoResource\Widgets;
 
 use App\Models\Servidor;
-use App\Models\Cargo; // <- importe o model do Cargo
-use Filament\Forms;   // <- importe os componentes de Form
+use App\Models\Cargo;
+use Filament\Forms;
 use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
 
 class ServidorAtestadoChart extends ApexChartWidget
@@ -40,10 +40,11 @@ class ServidorAtestadoChart extends ApexChartWidget
                 ->preload()
                 ->searchable()
                 // usamos nome->nome para casar com as chaves da matriz ($cargo = $s->cargo->nome)
-                ->options(fn () => Cargo::query()
-                    ->orderBy('nome')
-                    ->pluck('nome', 'nome')
-                    ->all()
+                ->options(
+                    fn() => Cargo::query()
+                        ->orderBy('nome')
+                        ->pluck('nome', 'nome')
+                        ->all()
                 )
                 ->hint('Vazio = todos os cargos')
                 ->live(), // Filament v3: atualiza o widget na mudança (no v2 use ->reactive())
