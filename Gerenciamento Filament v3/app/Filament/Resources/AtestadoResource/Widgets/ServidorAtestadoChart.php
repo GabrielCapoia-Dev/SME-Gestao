@@ -24,6 +24,7 @@ class ServidorAtestadoChart extends ApexChartWidget
     public array $idsFiltrados = [];
     public bool $hasFilters = false;
     public ?array $lastOptions = null;
+    public bool $semResultados = false;
 
     /**
      * Add a small form on the widget header to toggle which cargos appear.
@@ -51,10 +52,12 @@ class ServidorAtestadoChart extends ApexChartWidget
         ];
     }
 
-    public function onIdsAtualizados(array $ids = [], bool $hasFilters = false): void
+    public function onIdsAtualizados(array $idsAtestados = [], array $idsServidores = [], bool $hasFilters = false): void
     {
-        $this->idsFiltrados = $ids ?? [];
+        $this->idsFiltrados = $idsServidores ?? [];
         $this->hasFilters   = (bool) $hasFilters;
+        $this->semResultados = $hasFilters && empty($idsServidores);
+
         $this->updateOptions();
     }
 
@@ -63,31 +66,41 @@ class ServidorAtestadoChart extends ApexChartWidget
      */
     protected function getOptions(): array
     {
-        // Captura seleção atual do form (cargos) - vazio = todos
         $selectedCargos = (array) ($this->filterFormData['cargos'] ?? []);
 
+        // Caso tenha filtros ativos mas nenhum resultado
+        if ($this->semResultados) {
+            $this->totais = ['geral' => 0, 'por_regime' => []];
+            $this->dispatch('totaisAtualizados', $this->totais);
+
+            return [
+                'chart' => [
+                    'type' => 'bar',
+                    'height' => 300,
+                    'id' => static::$chartId,
+                    'stacked' => false,
+                    'toolbar' => ['show' => false],
+                ],
+                'xaxis' => ['categories' => []],
+                'series' => [],
+                'legend' => ['position' => 'top'],
+                'noData' => ['text' => 'Nenhum resultado encontrado para os filtros aplicados'],
+            ];
+        }
+
+        // Se vier ids filtrados → busca apenas eles
         if (! empty($this->idsFiltrados)) {
             $servidores = Servidor::query()
                 ->whereIn('id', $this->idsFiltrados)
                 ->with(['cargo.regimeContratual'])
                 ->get();
-
-            $matriz = $this->construirMatriz($servidores);
-
-            // aplica filtro por cargos selecionados (se houver)
-            if (! empty($selectedCargos)) {
-                $matriz = array_intersect_key($matriz, array_flip($selectedCargos));
-            }
-
-            $options = $this->montarGraficoAPartirDaMatriz($matriz);
-            return $this->lastOptions = $options;
+        } else {
+            // fallback inicial: todos servidores que têm pelo menos um atestado
+            $servidores = Servidor::query()
+                ->whereHas('atestados')
+                ->with(['cargo.regimeContratual'])
+                ->get();
         }
-
-        // Fallback: 1º load/sem filtros -> todos servidores que têm pelo menos um atestado
-        $servidores = Servidor::query()
-            ->whereHas('atestados')
-            ->with(['cargo.regimeContratual'])
-            ->get();
 
         $matriz = $this->construirMatriz($servidores);
 
@@ -95,8 +108,7 @@ class ServidorAtestadoChart extends ApexChartWidget
             $matriz = array_intersect_key($matriz, array_flip($selectedCargos));
         }
 
-        $options = $this->montarGraficoAPartirDaMatriz($matriz);
-        return $this->lastOptions = $options;
+        return $this->lastOptions = $this->montarGraficoAPartirDaMatriz($matriz);
     }
 
     /**

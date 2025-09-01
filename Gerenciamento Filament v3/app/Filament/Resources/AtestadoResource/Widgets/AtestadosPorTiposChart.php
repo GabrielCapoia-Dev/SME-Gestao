@@ -26,6 +26,8 @@ class AtestadosPorTiposChart extends ApexChartWidget
     public array $idsFiltrados = [];
     public bool $hasFilters = false;
     public ?array $lastOptions = null;
+    public bool $semResultados = false;
+
 
     /**
      * Adiciona um pequeno formulário no cabeçalho do widget para alternar quais tipos aparecem.
@@ -52,10 +54,13 @@ class AtestadosPorTiposChart extends ApexChartWidget
         ];
     }
 
-    public function onIdsAtualizados(array $ids = [], bool $hasFilters = false): void
+
+    public function onIdsAtualizados(array $idsAtestados = [], array $idsServidores = [], bool $hasFilters = false): void
     {
-        $this->idsFiltrados = $ids ?? [];
+        $this->idsFiltrados = $idsAtestados ?? [];
         $this->hasFilters   = (bool) $hasFilters;
+        $this->semResultados = $hasFilters && empty($idsAtestados);
+
         $this->updateOptions();
     }
 
@@ -64,30 +69,38 @@ class AtestadosPorTiposChart extends ApexChartWidget
      */
     protected function getOptions(): array
     {
-        // Captura seleção atual do form (tipos) - vazio = todos
         $selectedTipos = (array) ($this->filterFormData['tipos'] ?? []);
 
+        // Caso tenha filtros ativos mas nenhum resultado
+        if ($this->semResultados) {
+            $this->totais = ['geral' => 0, 'por_tipo' => []];
+            $this->dispatch('totaisAtualizadosAtestados', $this->totais);
+
+            return [
+                'chart' => [
+                    'type' => 'bar',
+                    'height' => 370,
+                    'id' => static::$chartId,
+                    'stacked' => false,
+                    'toolbar' => ['show' => false]
+                ],
+                'xaxis' => ['categories' => []],
+                'series' => [],
+                'legend' => ['position' => 'top'],
+                'noData' => ['text' => 'Nenhum resultado encontrado para os filtros aplicados'],
+            ];
+        }
+
+        // Se vier ids filtrados → busca apenas eles
         if (! empty($this->idsFiltrados)) {
             $atestados = Atestado::query()
                 ->whereIn('id', $this->idsFiltrados)
                 ->with('tipoAtestado')
                 ->get();
-
-            $dados = $this->construirDados($atestados);
-
-            // aplica filtro por tipos selecionados (se houver)
-            if (! empty($selectedTipos)) {
-                $dados = array_intersect_key($dados, array_flip($selectedTipos));
-            }
-
-            $options = $this->montarGraficoAPartirDosDados($dados);
-            return $this->lastOptions = $options;
+        } else {
+            // fallback inicial (primeiro load, sem filtros)
+            $atestados = Atestado::query()->with('tipoAtestado')->get();
         }
-
-        // Fallback: 1º load/sem filtros -> todos atestados
-        $atestados = Atestado::query()
-            ->with('tipoAtestado')
-            ->get();
 
         $dados = $this->construirDados($atestados);
 
@@ -95,9 +108,9 @@ class AtestadosPorTiposChart extends ApexChartWidget
             $dados = array_intersect_key($dados, array_flip($selectedTipos));
         }
 
-        $options = $this->montarGraficoAPartirDosDados($dados);
-        return $this->lastOptions = $options;
+        return $this->lastOptions = $this->montarGraficoAPartirDosDados($dados);
     }
+
 
     /**
      * Constrói matriz de dados tipo × quantidade a partir de uma coleção de Atestados.
@@ -113,7 +126,7 @@ class AtestadosPorTiposChart extends ApexChartWidget
             if (! $atestado->tipoAtestado) {
                 continue;
             }
-            
+
             $tipo = $atestado->tipoAtestado->nome;
             $dados[$tipo] = ($dados[$tipo] ?? 0) + 1;
         }
@@ -136,10 +149,10 @@ class AtestadosPorTiposChart extends ApexChartWidget
 
             return [
                 'chart' => [
-                    'type' => 'bar', 
-                    'height' => 370, 
-                    'id' => static::$chartId, 
-                    'stacked' => false, 
+                    'type' => 'bar',
+                    'height' => 370,
+                    'id' => static::$chartId,
+                    'stacked' => false,
                     'toolbar' => ['show' => false]
                 ],
                 'xaxis' => ['categories' => []],
@@ -161,10 +174,10 @@ class AtestadosPorTiposChart extends ApexChartWidget
 
         return [
             'chart' => [
-                'type' => 'bar', 
-                'height' => 370, 
-                'id' => static::$chartId, 
-                'stacked' => false, 
+                'type' => 'bar',
+                'height' => 370,
+                'id' => static::$chartId,
+                'stacked' => false,
                 'toolbar' => ['show' => false]
             ],
             'xaxis' => [
@@ -187,7 +200,7 @@ class AtestadosPorTiposChart extends ApexChartWidget
             ],
             'series' => [
                 [
-                    'name' => 'Quantidade de Atestados', 
+                    'name' => 'Quantidade de Atestados',
                     'data' => $valores
                 ],
             ],
@@ -208,8 +221,8 @@ class AtestadosPorTiposChart extends ApexChartWidget
             ],
             'plotOptions' => [
                 'bar' => [
-                    'horizontal' => false, 
-                    'borderRadius' => 6, 
+                    'horizontal' => false,
+                    'borderRadius' => 6,
                     'borderRadiusApplication' => 'end',
                     'columnWidth' => '70%',
                 ],

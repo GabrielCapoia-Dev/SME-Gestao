@@ -45,12 +45,12 @@ class ListAtestados extends ListRecords
         if ($user?->servidor) {
             $userSetorIds = $user->servidor->setores()->pluck('setors.id')->toArray();
             if (!empty($userSetorIds)) {
-                $query->whereHas('servidor.setores', fn ($q) => $q->whereIn('setors.id', $userSetorIds));
+                $query->whereHas('servidor.setores', fn($q) => $q->whereIn('setors.id', $userSetorIds));
             }
         }
 
         if ($user?->setor) {
-            $query->whereHas('servidor.setores', fn ($q) => $q->where('setors.id', $user->setor->id));
+            $query->whereHas('servidor.setores', fn($q) => $q->where('setors.id', $user->setor->id));
         }
 
         return $query;
@@ -59,17 +59,32 @@ class ListAtestados extends ListRecords
     /** Emite os IDs dos servidores presentes na listagem atual (após filtros/pesquisa) */
     protected function dispatchChartPayload(): void
     {
-        $idsServidores = $this->getFilteredTableQuery()
-            ->pluck('servidor_id')
+        $query = $this->getFilteredTableQuery();
+
+        $idsServidores = $query->pluck('servidor_id')
             ->unique()
             ->values()
             ->all();
 
+        $idsAtestados = $query->pluck('id')
+            ->values()
+            ->all();
+
+
+
         $hasFilters = $this->computeHasFiltersSafely();
 
-        // Evento que o gráfico escuta
-        $this->dispatch('atestadosFiltradosAtualizados', $idsServidores, $hasFilters);
+        // Se não houver nenhum resultado, despacha arrays vazios
+        if (empty($idsAtestados) && empty($idsServidores)) {
+            $this->dispatch('atestadosFiltradosAtualizados', [], [], $hasFilters);
+
+            return;
+        }
+
+        // Despacha normalmente
+        $this->dispatch('atestadosFiltradosAtualizados', $idsAtestados, $idsServidores, $hasFilters);
     }
+
 
     /** Idêntico ao que você já usa para detectar filtros/busca ativos */
     protected function computeHasFiltersSafely(): bool
@@ -86,19 +101,41 @@ class ListAtestados extends ListRecords
         foreach ($filtersState as $value) {
             if (is_array($value)) {
                 if (array_filter($value) !== []) {
-                    $hasFilterValues = true; break;
+                    $hasFilterValues = true;
+                    break;
                 }
             } elseif (!empty($value)) {
-                $hasFilterValues = true; break;
+                $hasFilterValues = true;
+                break;
             }
         }
 
         return $hasSearch || $hasFilterValues;
     }
 
-    public function updatedTableFilters(): void { parent::updatedTableFilters(); $this->dispatchChartPayload(); }
-    public function updatedTableSearch(): void { parent::updatedTableSearch(); $this->dispatchChartPayload(); }
-    public function updatedTableSortColumn(): void { parent::updatedTableSortColumn(); $this->dispatchChartPayload(); }
-    public function updatedTableSortDirection(): void { parent::updatedTableSortDirection(); $this->dispatchChartPayload(); }
-    public function updatedTableRecordsPerPage(): void { parent::updatedTableRecordsPerPage(); $this->dispatchChartPayload(); }
+    public function updatedTableFilters(): void
+    {
+        parent::updatedTableFilters();
+        $this->dispatchChartPayload();
+    }
+    public function updatedTableSearch(): void
+    {
+        parent::updatedTableSearch();
+        $this->dispatchChartPayload();
+    }
+    public function updatedTableSortColumn(): void
+    {
+        parent::updatedTableSortColumn();
+        $this->dispatchChartPayload();
+    }
+    public function updatedTableSortDirection(): void
+    {
+        parent::updatedTableSortDirection();
+        $this->dispatchChartPayload();
+    }
+    public function updatedTableRecordsPerPage(): void
+    {
+        parent::updatedTableRecordsPerPage();
+        $this->dispatchChartPayload();
+    }
 }

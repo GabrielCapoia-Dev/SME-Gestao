@@ -244,33 +244,62 @@ class AtestadoResource extends Resource
                     ->preload()
                     ->multiple(),
 
-                // Filtro por período (data de início)
-                Tables\Filters\Filter::make('updated_periodo')
-                    ->label('Período de Atualização')
-                    ->form([
-                        Forms\Components\DatePicker::make('data_inicio')
-                            ->label('De')
-                            ->columnSpan(1),
-                        Forms\Components\DatePicker::make('data_fim')
-                            ->label('Até')
-                            ->columnSpan(1),
+                // Filtro por setor
+                Tables\Filters\SelectFilter::make('setores')
+                    ->label('Setor')
+                    ->relationship('servidor.setores', 'nome')
+                    ->preload()
+                    ->multiple(),
+
+                // Filtro por período pré-definido
+                Tables\Filters\SelectFilter::make('periodo')
+                    ->label('Período')
+                    ->options([
+                        'esta_semana'     => 'Esta Semana',
+                        'este_mes'        => 'Este Mês',
+                        'ultimo_mes'      => 'Último Mês',
+                        'este_semestre'   => 'Este Semestre',
+                        'ultimo_semestre' => 'Último Semestre',
+                        'este_ano'        => 'Este Ano',
+                        'ultimo_ano'      => 'Último Ano',
+                        'geral'           => 'Geral',
                     ])
-                    ->columns(2) // <- força duas colunas
                     ->query(function (Builder $query, array $data) {
-                        if (!empty($data['data_inicio']) && !empty($data['data_fim'])) {
-                            $inicio = Carbon::parse($data['data_inicio'])->startOfDay();
-                            $fim = Carbon::parse($data['data_fim'])->endOfDay();
-                            $query->whereBetween('updated_at', [$inicio, $fim]);
-                        } elseif (!empty($data['data_inicio'])) {
-                            $inicio = Carbon::parse($data['data_inicio'])->startOfDay();
-                            $query->where('updated_at', '>=', $inicio);
-                        } elseif (!empty($data['data_fim'])) {
-                            $fim = Carbon::parse($data['data_fim'])->endOfDay();
-                            $query->where('updated_at', '<=', $fim);
+                        $value = $data['value'] ?? null;
+
+                        if (!$value || $value === 'geral') {
+                            return;
                         }
+
+                        $now = now();
+
+                        match ($value) {
+                            'esta_semana' => $query->whereBetween('data_inicio', [$now->startOfWeek(), $now->endOfWeek()]),
+                            'este_mes' => $query->whereBetween('data_inicio', [$now->startOfMonth(), $now->endOfMonth()]),
+                            'ultimo_mes' => $query->whereBetween('data_inicio', [
+                                $now->copy()->subMonth()->startOfMonth(),
+                                $now->copy()->subMonth()->endOfMonth()
+                            ]),
+                            'este_semestre' => $query->whereBetween('data_inicio', [
+                                $now->month <= 6 ? $now->startOfYear() : $now->copy()->month(7)->startOfMonth(),
+                                $now->month <= 6 ? $now->copy()->month(6)->endOfMonth() : $now->endOfYear(),
+                            ]),
+                            'ultimo_semestre' => $query->whereBetween('data_inicio', [
+                                $now->month <= 6
+                                    ? $now->copy()->subYear()->month(7)->startOfMonth()
+                                    : $now->copy()->startOfYear(),
+                                $now->month <= 6
+                                    ? $now->copy()->subYear()->endOfYear()
+                                    : $now->copy()->month(6)->endOfMonth(),
+                            ]),
+                            'este_ano' => $query->whereBetween('data_inicio', [$now->startOfYear(), $now->endOfYear()]),
+                            'ultimo_ano' => $query->whereBetween('data_inicio', [
+                                $now->copy()->subYear()->startOfYear(),
+                                $now->copy()->subYear()->endOfYear()
+                            ]),
+                            default => null,
+                        };
                     }),
-
-
             ])
 
             ->actions([
