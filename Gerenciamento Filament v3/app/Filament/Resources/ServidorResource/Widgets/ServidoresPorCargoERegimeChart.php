@@ -14,26 +14,17 @@ class ServidoresPorCargoERegimeChart extends ApexChartWidget
     protected static ?string $heading = 'Servidores por Cargo e Regime Contratual';
     protected static ?int $contentHeight = 318;
 
-    /** Continua ouvindo o evento da page (se estiver usando Livewire v3, considere #[On]) */
     protected $listeners = ['servidoresFiltradosAtualizados' => 'onIdsAtualizados'];
 
-    /** Totais publicados para outros widgets */
     protected array $totais = [
         'geral' => 0,
         'por_regime' => [],
     ];
 
-    /** IDs vindos da listagem (após filtros) */
     public array $idsFiltrados = [];
     public bool $hasFilters = false;
     public ?array $lastOptions = null;
 
-    /**
-     * Small form on the widget header: choose which cargos to display.
-     * Empty selection => show ALL cargos.
-     *
-     * @return array<int, \Filament\Forms\Components\Component>
-     */
     protected function getFormSchema(): array
     {
         return [
@@ -42,22 +33,17 @@ class ServidoresPorCargoERegimeChart extends ApexChartWidget
                 ->multiple()
                 ->preload()
                 ->searchable()
-                // usamos nome->nome para casar com as chaves da matriz ($cargo = $s->cargo->nome)
                 ->options(fn () => Cargo::query()
                     ->orderBy('nome')
                     ->pluck('nome', 'nome')
                     ->all()
                 )
                 ->hint('Vazio = todos os cargos')
-                ->live() // Filament v3: atualiza o widget ao mudar o valor
-                // opcional: se quiser já reagir sem esperar re-render:
+                ->live()
                 ->afterStateUpdated(fn () => $this->updateOptions()),
         ];
     }
 
-    /**
-     * Recebe IDs da listagem (mantenho a sua assinatura).
-     */
     public function onIdsAtualizados(array $ids = [], bool $hasFilters = false): void
     {
         $this->idsFiltrados = $ids ?? [];
@@ -65,21 +51,14 @@ class ServidoresPorCargoERegimeChart extends ApexChartWidget
         $this->updateOptions();
     }
 
-    /**
-     * Monta as opções do ApexCharts:
-     * - Se vieram IDs: usa exatamente esses servidores.
-     * - Caso contrário: fallback pelo serviço (ex.: visão geral).
-     * Em ambos, aplica o filtro de cargos selecionados no Select.
-     */
     protected function getOptions(): array
     {
-        // seleção atual de cargos (nomes); vazio => não filtra
         $selectedCargos = array_values(array_filter((array) ($this->filterFormData['cargos'] ?? [])));
 
         if (! empty($this->idsFiltrados)) {
             $servidores = Servidor::query()
                 ->whereIn('id', $this->idsFiltrados)
-                ->with(['cargo.regimeContratual'])
+                ->with(['lotacao.cargo.regimeContratual'])
                 ->get();
 
             $matriz = $this->construirMatriz($servidores);
@@ -91,10 +70,9 @@ class ServidoresPorCargoERegimeChart extends ApexChartWidget
             return $this->lastOptions = $this->montarGraficoAPartirDaMatriz($matriz);
         }
 
-        // Fallback (primeiro load / visão geral)
         /** @var ServidorService $service */
         $service = app(ServidorService::class);
-        $dados   = $service->servidoresPorCargoERegime(setorId: null); // matriz [cargo][regime] => qtd
+        $dados   = $service->servidoresPorCargoERegime(setorId: null);
 
         if ($selectedCargos !== []) {
             $dados = array_intersect_key($dados, array_flip($selectedCargos));
@@ -103,24 +81,17 @@ class ServidoresPorCargoERegimeChart extends ApexChartWidget
         return $this->lastOptions = $this->montarGraficoAPartirDaMatriz($dados);
     }
 
-    /**
-     * Constrói a matriz cargo×regime a partir da coleção de Servidores.
-     *
-     * @param \Illuminate\Support\Collection<int, \App\Models\Servidor> $servidores
-     * @return array<string, array<string, int>>
-     */
     protected function construirMatriz($servidores): array
     {
         $matriz = [];
 
         foreach ($servidores as $s) {
-            if (! $s->cargo || ! $s->cargo->regimeContratual) {
-                // se preferir, agrupe em "Sem Cargo/Sem Regime"
+            $cargo  = $s->lotacao?->cargo?->nome;
+            $regime = $s->lotacao?->cargo?->regimeContratual?->nome;
+
+            if (! $cargo || ! $regime) {
                 continue;
             }
-
-            $cargo  = $s->cargo->nome;
-            $regime = $s->cargo->regimeContratual->nome;
 
             $matriz[$cargo][$regime] = ($matriz[$cargo][$regime] ?? 0) + 1;
         }
@@ -128,9 +99,6 @@ class ServidoresPorCargoERegimeChart extends ApexChartWidget
         return $matriz;
     }
 
-    /**
-     * Converte matriz cargo×regime em opções do ApexCharts (com “no data” elegante).
-     */
     protected function montarGraficoAPartirDaMatriz(array $dados): array
     {
         if ($dados === []) {

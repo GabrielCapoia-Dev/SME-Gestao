@@ -32,17 +32,6 @@ class AtestadoResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Afastamentos';
 
-    public static function getWidgets(): array
-    {
-        return [
-            // ResumoGraficoServidores::class,
-            // ServidorAtestadoChart::class,
-            AtestadosPorTiposChart::class
-        ];
-    }
-
-
-
     public static function form(Form $form): Form
     {
         return $form
@@ -187,13 +176,13 @@ class AtestadoResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('servidor.cargo.nome')
+                Tables\Columns\TextColumn::make('servidor.lotacao.cargo.nome')
                     ->label('Cargo')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('servidor.cargo.regimeContratual.nome')
+                Tables\Columns\TextColumn::make('servidor.lotacao.cargo.regimeContratual.nome')
                     ->label('Regime Contratual')
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable()

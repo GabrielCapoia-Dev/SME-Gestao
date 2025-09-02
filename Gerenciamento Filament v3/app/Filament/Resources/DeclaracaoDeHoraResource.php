@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use AlperenErsoy\FilamentExport\Actions\FilamentExportHeaderAction;
 use App\Filament\Resources\DeclaracaoDeHoraResource\Pages;
-use App\Filament\Resources\DeclaracaoDeHoraResource\RelationManagers;
 use App\Models\DeclaracaoDeHora;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -22,11 +21,9 @@ class DeclaracaoDeHoraResource extends Resource
     protected static ?string $model = DeclaracaoDeHora::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-clock';
-
     protected static ?string $navigationGroup = 'Gerenciamento de Servidores';
 
     protected static ?string $modelLabel = 'Declaração de Horas';
-
     protected static ?string $pluralModelLabel = 'Declarações de Horas';
 
     public static function form(Form $form): Form
@@ -56,7 +53,6 @@ class DeclaracaoDeHoraResource extends Resource
                     ->getOptionLabelFromRecordUsing(fn($record) => "{$record->matricula} - {$record->nome}")
                     ->required(),
 
-
                 Forms\Components\DatePicker::make('data')
                     ->label('Data')
                     ->required(),
@@ -81,7 +77,6 @@ class DeclaracaoDeHoraResource extends Resource
 
                 Forms\Components\TextInput::make('cid')
                     ->label('Cid'),
-
             ]);
     }
 
@@ -106,13 +101,13 @@ class DeclaracaoDeHoraResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('servidor.cargo.nome')
+                Tables\Columns\TextColumn::make('servidor.lotacao.cargo.nome')
                     ->label('Cargo')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('servidor.cargo.regimeContratual.nome')
+                Tables\Columns\TextColumn::make('servidor.lotacao.cargo.regimeContratual.nome')
                     ->label('Regime Contratual')
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable()
@@ -137,13 +132,11 @@ class DeclaracaoDeHoraResource extends Resource
                 Tables\Columns\TextColumn::make('hora_inicio')
                     ->label('Hora de Início')
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->date()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('hora_fim')
                     ->label('Hora de Fim')
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->date()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('cid')
@@ -175,12 +168,11 @@ class DeclaracaoDeHoraResource extends Resource
                     ->multiple()
                     ->query(function (Builder $query, array $data) {
                         if (!empty($data['values'])) {
-                            $query->whereHas('servidor', function ($subQuery) use ($data) {
-                                $subQuery->whereIn('cargo_id', $data['values']);
+                            $query->whereHas('servidor.lotacao.cargo', function ($subQuery) use ($data) {
+                                $subQuery->whereIn('cargos.id', $data['values']);
                             });
                         }
                     }),
-
 
                 SelectFilter::make('servidor_setor')
                     ->label('Setor')
@@ -190,7 +182,7 @@ class DeclaracaoDeHoraResource extends Resource
                     ->query(function (Builder $query, array $data) {
                         if (!empty($data['values'])) {
                             $query->whereHas('servidor.setores', function ($subQuery) use ($data) {
-                                $subQuery->whereIn('setores.id', $data['values']);
+                                $subQuery->whereIn('setors.id', $data['values']);
                             });
                         }
                     }),
@@ -204,7 +196,6 @@ class DeclaracaoDeHoraResource extends Resource
                         $query->where('turno_id', $data['value']);
                     }),
 
-                // Filtro por período (data de início)
                 Tables\Filters\Filter::make('updated_periodo')
                     ->label('Período de Atualização')
                     ->form([
@@ -243,17 +234,15 @@ class DeclaracaoDeHoraResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListDeclaracaoDeHoras::route('/'),
+            'index'  => Pages\ListDeclaracaoDeHoras::route('/'),
             'create' => Pages\CreateDeclaracaoDeHora::route('/create'),
-            'edit' => Pages\EditDeclaracaoDeHora::route('/{record}/edit'),
+            'edit'   => Pages\EditDeclaracaoDeHora::route('/{record}/edit'),
         ];
     }
 }

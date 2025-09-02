@@ -259,7 +259,7 @@ class ApiFilterService
     }
 
 
-    private function locaisTrabalhoIndesejados(): array
+    public function locaisTrabalhoIndesejados(): array
     {
 
         return  [

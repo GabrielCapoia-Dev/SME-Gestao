@@ -24,12 +24,15 @@ class ListServidors extends ListRecords
 
     protected function getTableQuery(): Builder
     {
-        $query = static::getResource()::getEloquentQuery()->with(['setores', 'cargaHoraria', 'lotacao']);
+        // 👉 Agora já carrega também cargo dentro da lotação
+        $query = static::getResource()::getEloquentQuery()
+            ->with(['setores', 'cargaHoraria', 'lotacao.cargo.regimeContratual']);
 
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
 
-        if ($user->servidor) {
+        // Se o usuário tiver vínculo com servidor → limita pelos setores dele
+        if ($user?->servidor) {
             $userSetorIds = $user->servidor->setores()->pluck('setors.id')->toArray();
 
             if (!empty($userSetorIds)) {
@@ -39,7 +42,8 @@ class ListServidors extends ListRecords
             }
         }
 
-        if ($user->setor) {
+        // Se o usuário tiver vínculo direto com um setor → limita só aquele setor
+        if ($user?->setor) {
             $query->whereHas('setores', function ($q) use ($user) {
                 $q->where('setors.id', $user->setor->id);
             });
@@ -53,28 +57,22 @@ class ListServidors extends ListRecords
         $ids = $this->getFilteredTableQuery()->pluck('id')->all();
         $hasFilters = $this->computeHasFiltersSafely();
 
-        // >>> Use parâmetros posicionais, não nomeados
         $this->dispatch('servidoresFiltradosAtualizados', $ids, $hasFilters);
     }
 
-    /** Checa filtros/busca com segurança (só chamada em hooks da tabela) */
     protected function computeHasFiltersSafely(): bool
     {
-        // Busca
         $hasSearch = !empty($this->tableSearch ?? '');
 
-        // Filtros (pega o estado atual do formulário de filtros da tabela)
         try {
             $filtersState = $this->getTableFiltersForm()?->getState() ?? [];
         } catch (\Throwable $e) {
             $filtersState = [];
         }
 
-        // Considera “ativo” se qualquer filtro tiver valor
         $hasFilterValues = false;
         foreach ($filtersState as $value) {
             if (is_array($value)) {
-                // pode vir como ['value' => ..., ...] etc.
                 if (array_filter($value) !== []) {
                     $hasFilterValues = true;
                     break;
@@ -87,7 +85,6 @@ class ListServidors extends ListRecords
 
         return $hasSearch || $hasFilterValues;
     }
-
 
     public function updatedTableFilters(): void
     {

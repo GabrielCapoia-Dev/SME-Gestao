@@ -29,7 +29,6 @@ class Servidor extends Model
         'data_admissao',
         'nome',
         'email',
-        'cargo_id',
         'turno_id',
         'lotacao_id',
         'user_id',
@@ -43,7 +42,6 @@ class Servidor extends Model
                 'data_admissao',
                 'nome',
                 'email',
-                'cargo_id',
                 'turno_id',
                 'lotacao_id',
                 'user_id',
@@ -53,11 +51,6 @@ class Servidor extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function cargo()
-    {
-        return $this->belongsTo(Cargo::class);
     }
 
     public function turno()
@@ -88,5 +81,10 @@ class Servidor extends Model
     public function professor()
     {
         return $this->hasOne(Professor::class);
+    }
+
+    public function baseSalarial()
+    {
+        return $this->belongsTo(BaseSalarial::class);
     }
 }

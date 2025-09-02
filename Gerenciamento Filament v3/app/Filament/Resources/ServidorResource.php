@@ -78,7 +78,6 @@ class ServidorResource extends Resource
                     ->disabled($naoAdminOuRH)
                     ->dehydrated($adminOuRH),
 
-                // ✅ PERMITIDO PARA TODOS
                 Forms\Components\TextInput::make('email')
                     ->label('Email')
                     ->unique(ignoreRecord: true)
@@ -87,13 +86,15 @@ class ServidorResource extends Resource
 
                 Forms\Components\Select::make('cargo_id')
                     ->label('Cargo')
-                    ->preload()
-                    ->relationship('cargo', 'nome')
-                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->nome} - {$record->regimeContratual->nome}")
-                    ->reactive()
-                    ->required()
-                    ->disabled($naoAdminOuRH)
-                    ->dehydrated($adminOuRH),
+                    ->options(function () {
+                        return \App\Models\Cargo::with('regimeContratual')->get()->mapWithKeys(function ($cargo) {
+                            return [
+                                $cargo->id => "{$cargo->nome} - {$cargo->regimeContratual?->nome}"
+                            ];
+                        })->toArray();
+                    })
+                    ->disabled()
+                    ->dehydrated(false),
 
                 Forms\Components\Select::make('turno_id')
                     ->label('Turno')
@@ -123,14 +124,14 @@ class ServidorResource extends Resource
                             ->orWhere('codigo', 'like', "%{$search}%")
                             ->limit(50)
                             ->get()
-                            ->pluck('nome', 'id')
-                            ->map(function ($nome, $id) {
-                                $lotacao = \App\Models\Lotacao::find($id);
-                                return "{$lotacao->codigo} - {$lotacao->cargo?->nome} {$lotacao->cargo?->regimeContratual->nome} |{$lotacao->setor->nome}";
+                            ->mapWithKeys(function ($lotacao) {
+                                return [
+                                    $lotacao->id => "{$lotacao->codigo} - {$lotacao->cargo?->nome} {$lotacao->cargo?->regimeContratual?->nome} | {$lotacao->setor?->nome}"
+                                ];
                             });
                     })
                     ->getOptionLabelFromRecordUsing(function ($record) {
-                        return "{$record->codigo} - {$record->cargo?->nome} {$record->cargo?->regimeContratual->nome} | {$record->setor->nome}";
+                        return "{$record?->codigo} - {$record->cargo?->nome} {$record->cargo?->regimeContratual?->nome} | {$record->setor?->nome}";
                     })
                     ->required()
                     ->disabled($naoAdminOuRH)
@@ -246,19 +247,19 @@ class ServidorResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('cargo.nome')
+                Tables\Columns\TextColumn::make('lotacao.cargo.nome')
                     ->sortable()
                     ->label('Cargo')
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->getStateUsing(fn($record) => $record->cargo?->nome ?? '-')
-                    ->searchable(),
+                    ->getStateUsing(fn($record) => $record->lotacao?->cargo?->nome ?? '-')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('cargo.regimeContratual.nome')
+
+                Tables\Columns\TextColumn::make('lotacao.cargo.regimeContratual.nome')
                     ->sortable()
                     ->label('Regime Contratual')
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->getStateUsing(fn($record) => $record->cargo?->regimeContratual?->nome ?? '-')
-                    ->searchable(),
+                    ->getStateUsing(fn($record) => $record->lotacao?->cargo?->regimeContratual?->nome ?? '-')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
 
                 Tables\Columns\TextColumn::make('turno.nome')
                     ->sortable()
@@ -304,16 +305,22 @@ class ServidorResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('cargo_id')
+                SelectFilter::make('lotacao.cargo_id')
                     ->label('Cargo')
-                    ->preload()
                     ->multiple()
+                    ->preload()
                     ->options(function () {
                         return \App\Models\Cargo::with('regimeContratual')->get()->mapWithKeys(function ($cargo) {
                             return [
-                                $cargo->id => "{$cargo->nome} - {$cargo->regimeContratual->nome}"
+                                $cargo->id => "{$cargo->nome} - {$cargo->regimeContratual?->nome}"
                             ];
                         })->toArray();
+                    })
+                    ->query(function (Builder $query, array $data) {
+                        if (empty($data['values'])) return;
+                        $query->whereHas('lotacao', function ($q) use ($data) {
+                            $q->whereIn('cargo_id', $data['values']);
+                        });
                     }),
 
                 SelectFilter::make('setores')
@@ -343,9 +350,8 @@ class ServidorResource extends Resource
                             ];
                         })->toArray();
                     }),
-
-
             ])
+
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

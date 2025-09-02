@@ -9,6 +9,7 @@ use App\Filament\Resources\AtestadoResource\Widgets\AtestadosPorTiposChart;
 use App\Filament\Widgets\ResumoGraficoAtestados;
 use App\Filament\Widgets\ResumoGraficoServidores;
 use Filament\Actions;
+use App\Filament\Widgets\CarrosselComponent;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -26,12 +27,10 @@ class ListAtestados extends ListRecords
 
     protected function getHeaderWidgets(): array
     {
-        // Nova instância do Resumo: vai ouvir 'totaisAtualizados' emitido pelo gráfico acima
         return [
             ServidorAtestadoChart::class,
             ResumoGraficoServidores::class,
-            AtestadosPorTiposChart::class,
-            ResumoGraficoAtestados::class
+            ResumoGraficoAtestados::class,
         ];
     }
 

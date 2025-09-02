@@ -402,8 +402,8 @@ class DatabaseSeeder extends Seeder
                 'nome' => fake()->name(),
                 'matricula' => str_pad($i, 4, '0', STR_PAD_LEFT),
                 'email' => fake()->unique()->safeEmail(),
-                'cargo_id' => Cargo::inRandomOrder()->first()->id,
                 'turno_id' => Turno::inRandomOrder()->first()->id,
+                'base_salarial_id' => null,
                 'lotacao_id' => collect($lotacoes)->random()->id,
                 'data_admissao' => fake()->date('Y-m-d', '-10 years'),
             ]);
@@ -461,6 +461,14 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->done('Servidores e cargas horárias', $numeroServidores);
+
+
+        // ========================
+        // Importar Servidores da API
+        // ========================
+        // $this->call([
+        //     ServidorSeeder::class,
+        // ]);
 
         $this->command->info('✅ Seed completo finalizado com sucesso!');
 

@@ -20,15 +20,11 @@ class ProfessorResource extends Resource
     protected static ?string $model = Professor::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
-
     protected static ?string $navigationGroup = "Gerenciamento Escolar";
-
     protected static ?int $navigationSort = 1;
 
     public static ?string $modelLabel = 'Professor';
-
     public static ?string $pluralModelLabel = 'Professores';
-
     public static ?string $slug = 'professores';
 
     public static function form(Form $form): Form
@@ -41,8 +37,9 @@ class ProfessorResource extends Resource
                         /** @var \App\Models\User|null $user */
                         $user = Auth::user();
 
-                        $query = Servidor::with(['cargo.regimeContratual'])
-                            ->whereHas('cargo', fn($q) => $q->where('nome', 'Professor'));
+                        // agora filtramos servidores com cargo "Professor" via lotação
+                        $query = Servidor::with(['lotacao.cargo.regimeContratual'])
+                            ->whereHas('lotacao.cargo', fn($q) => $q->where('nome', 'Professor'));
 
                         if (!$user->hasRole('Admin') && $user->servidor) {
                             $userSetorIds = $user->servidor
@@ -60,8 +57,8 @@ class ProfessorResource extends Resource
 
                         return $query->get()
                             ->mapWithKeys(function ($servidor) {
-                                $cargo = $servidor->cargo?->nome ?? '-';
-                                $regime = $servidor->cargo?->regimeContratual?->nome ?? '-';
+                                $cargo = $servidor->lotacao?->cargo?->nome ?? '-';
+                                $regime = $servidor->lotacao?->cargo?->regimeContratual?->nome ?? '-';
                                 return [
                                     $servidor->id => "[{$servidor->matricula}] {$servidor->nome} ({$cargo} - {$regime})"
                                 ];
@@ -132,30 +129,33 @@ class ProfessorResource extends Resource
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('servidor.matricula')
                     ->label('Matricula')
                     ->searchable()
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('servidor.nome')
                     ->label('Nome')
                     ->searchable()
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('turma_id')
                     ->label('Turma')
-                    ->formatStateUsing(function ($state, \App\Models\Professor $record) {
-                        return $record->turma?->nomeCompleto();
-                    }),
+                    ->formatStateUsing(fn($state, \App\Models\Professor $record) => $record->turma?->nomeCompleto()),
+
                 Tables\Columns\TextColumn::make('aula.nome')
                     ->label('Aula')
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('servidor.cargo.nome')
+                Tables\Columns\TextColumn::make('servidor.lotacao.cargo.nome')
                     ->label('Cargo')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
-                Tables\Columns\TextColumn::make('servidor.cargo.regimeContratual.nome')
+
+                Tables\Columns\TextColumn::make('servidor.lotacao.cargo.regimeContratual.nome')
                     ->label('Regime Contratual')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
@@ -166,11 +166,13 @@ class ProfessorResource extends Resource
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Criado em')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label('Atualizado em')
                     ->dateTime()
@@ -178,7 +180,6 @@ class ProfessorResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([])
-
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
