@@ -23,6 +23,7 @@ class BaseSalarialResource extends Resource
     {
         return $form
             ->schema([
+                
                 //
             ]);
     }

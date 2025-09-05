@@ -21,6 +21,7 @@ class BaseSalarial extends Model
     protected $fillable = [
         'sigla',
         'baseSalarial',
+        'tipo',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -29,6 +30,7 @@ class BaseSalarial extends Model
             ->logOnly([
                 'sigla',
                 'baseSalarial',
+                'tipo',
             ]);
     }
 

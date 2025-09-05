@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('sigla');
             $table->float('baseSalarial');
+            $table->string('tipo');
             $table->timestamps();
         });
     }

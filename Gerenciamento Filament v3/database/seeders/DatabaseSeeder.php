@@ -384,91 +384,91 @@ class DatabaseSeeder extends Seeder
         // $this->done('Lotações', $totalLotacoes);
 
 
-        // ========================
-        // Criação de X servidores aleatórios com setor e carga horária
-        // ========================
+        // // ========================
+        // // Criação de X servidores aleatórios com setor e carga horária
+        // // ========================
 
-        // Pergunta no terminal
-        $numeroServidores = (int) $this->command->ask(
-            'Quantos servidores deseja criar?',
-            500 // valor padrão se só apertar Enter
-        );
+        // // Pergunta no terminal
+        // $numeroServidores = (int) $this->command->ask(
+        //     'Quantos servidores deseja criar?',
+        //     500 // valor padrão se só apertar Enter
+        // );
 
-        $lotacoes = \App\Models\Lotacao::all();
+        // $lotacoes = \App\Models\Lotacao::all();
 
 
-        for ($i = 1; $i <= $numeroServidores; $i++) {
-            $servidor = Servidor::create([
-                'nome' => fake()->name(),
-                'matricula' => str_pad($i, 4, '0', STR_PAD_LEFT),
-                'email' => fake()->unique()->safeEmail(),
-                'turno_id' => Turno::inRandomOrder()->first()->id,
-                'base_salarial_id' => null,
-                'lotacao_id' => collect($lotacoes)->random()->id,
-                'data_admissao' => fake()->date('Y-m-d', '-10 years'),
-            ]);
+        // for ($i = 1; $i <= $numeroServidores; $i++) {
+        //     $servidor = Servidor::create([
+        //         'nome' => fake()->name(),
+        //         'matricula' => str_pad($i, 4, '0', STR_PAD_LEFT),
+        //         'email' => fake()->unique()->safeEmail(),
+        //         'turno_id' => Turno::inRandomOrder()->first()->id,
+        //         'base_salarial_id' => null,
+        //         'lotacao_id' => collect($lotacoes)->random()->id,
+        //         'data_admissao' => fake()->date('Y-m-d', '-10 years'),
+        //     ]);
 
-            // Vincular setor aleatório
-            $servidor->setores()->sync([collect($setores)->random()->id]);
+        //     // Vincular setor aleatório
+        //     $servidor->setores()->sync([collect($setores)->random()->id]);
 
-            // Definir carga horária conforme turno
-            $turnoNome = $servidor->turno->nome;
+        //     // Definir carga horária conforme turno
+        //     $turnoNome = $servidor->turno->nome;
 
-            switch ($turnoNome) {
-                case 'Integral':
-                    $entrada = '08:00';
-                    $saida_intervalo = '12:00';
-                    $entrada_intervalo = '13:30';
-                    $saida = '17:00';
-                    break;
+        //     switch ($turnoNome) {
+        //         case 'Integral':
+        //             $entrada = '08:00';
+        //             $saida_intervalo = '12:00';
+        //             $entrada_intervalo = '13:30';
+        //             $saida = '17:00';
+        //             break;
 
-                case 'Manhã':
-                    $entrada = '08:00';
-                    $saida_intervalo = '12:00';
-                    $entrada_intervalo = null;
-                    $saida = null;
-                    break;
+        //         case 'Manhã':
+        //             $entrada = '08:00';
+        //             $saida_intervalo = '12:00';
+        //             $entrada_intervalo = null;
+        //             $saida = null;
+        //             break;
 
-                case 'Tarde':
-                    $entrada = null;
-                    $saida_intervalo = null;
-                    $entrada_intervalo = '13:30';
-                    $saida = '17:00';
-                    break;
+        //         case 'Tarde':
+        //             $entrada = null;
+        //             $saida_intervalo = null;
+        //             $entrada_intervalo = '13:30';
+        //             $saida = '17:00';
+        //             break;
 
-                case 'Noite':
-                    $entrada = '18:00';
-                    $saida_intervalo = null;
-                    $entrada_intervalo = null;
-                    $saida = '23:00';
-                    break;
+        //         case 'Noite':
+        //             $entrada = '18:00';
+        //             $saida_intervalo = null;
+        //             $entrada_intervalo = null;
+        //             $saida = '23:00';
+        //             break;
 
-                default:
-                    $entrada = $saida_intervalo = $entrada_intervalo = $saida = null;
-                    break;
-            }
+        //         default:
+        //             $entrada = $saida_intervalo = $entrada_intervalo = $saida = null;
+        //             break;
+        //     }
 
-            // Criar carga horária junto com o servidor
-            CargaHoraria::create([
-                'servidor_id' => $servidor->id,
-                'entrada' => $entrada,
-                'saida_intervalo' => $saida_intervalo,
-                'entrada_intervalo' => $entrada_intervalo,
-                'saida' => $saida,
-            ]);
+        //     // Criar carga horária junto com o servidor
+        //     CargaHoraria::create([
+        //         'servidor_id' => $servidor->id,
+        //         'entrada' => $entrada,
+        //         'saida_intervalo' => $saida_intervalo,
+        //         'entrada_intervalo' => $entrada_intervalo,
+        //         'saida' => $saida,
+        //     ]);
 
-            $this->loading('Criando servidores e cargas horárias', $i, $numeroServidores);
-        }
+        //     $this->loading('Criando servidores e cargas horárias', $i, $numeroServidores);
+        // }
 
-        $this->done('Servidores e cargas horárias', $numeroServidores);
+        // $this->done('Servidores e cargas horárias', $numeroServidores);
 
 
         // ========================
         // Importar Servidores da API
         // ========================
-        // $this->call([
-        //     ServidorSeeder::class,
-        // ]);
+        $this->call([
+            ServidorSeeder::class,
+        ]);
 
         $this->command->info('✅ Seed completo finalizado com sucesso!');
 

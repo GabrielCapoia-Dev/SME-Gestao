@@ -92,13 +92,13 @@ class ServidorAtestadoChart extends ApexChartWidget
         if (! empty($this->idsFiltrados)) {
             $servidores = Servidor::query()
                 ->whereIn('id', $this->idsFiltrados)
-                ->with(['cargo.regimeContratual'])
+                ->with(['lotacao.cargo.regimeContratual'])
                 ->get();
         } else {
             // fallback inicial: todos servidores que têm pelo menos um atestado
             $servidores = Servidor::query()
                 ->whereHas('atestados')
-                ->with(['cargo.regimeContratual'])
+                ->with(['lotacao.cargo.regimeContratual'])
                 ->get();
         }
 
@@ -122,11 +122,15 @@ class ServidorAtestadoChart extends ApexChartWidget
         $matriz = [];
 
         foreach ($servidores as $s) {
-            if (! $s->cargo || ! $s->cargo->regimeContratual) {
+            $cargoModel = $s->lotacao?->cargo;
+            $regimeModel = $cargoModel?->regimeContratual;
+
+            if (! $cargoModel || ! $regimeModel) {
                 continue;
             }
-            $cargo  = $s->cargo->nome;
-            $regime = $s->cargo->regimeContratual->nome;
+
+            $cargo  = $cargoModel->nome;
+            $regime = $regimeModel->nome;
 
             $matriz[$cargo][$regime] = ($matriz[$cargo][$regime] ?? 0) + 1;
         }

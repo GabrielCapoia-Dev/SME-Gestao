@@ -21,7 +21,6 @@ class RegimeContratualResource extends Resource
         return false;
     }
 
-
     protected static ?string $model = RegimeContratual::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-chart-bar';

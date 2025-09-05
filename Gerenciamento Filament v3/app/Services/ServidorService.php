@@ -35,15 +35,15 @@ class ServidorService
         $regimeTable = (new RegimeContratual)->getTable();
         $hasRegime   = Schema::hasTable($regimeTable);
 
-        // base
+        // base (agora via lotacao)
         $query = Servidor::query()
-            ->join('cargos', 'cargos.id', '=', 'servidores.cargo_id');
+            ->join('lotacoes', 'lotacoes.id', '=', 'servidores.lotacao_id')
+            ->join('cargos', 'cargos.id', '=', 'lotacoes.cargo_id');
 
-        $joinedSetor   = false;
-        $countExpr     = 'COUNT(servidores.id)'; // padrão sem join com setor
+        $joinedSetor     = false;
+        $countExpr       = 'COUNT(servidores.id)';
         $precisaDistinct = false;
 
-        // === Escopo pelo usuário logado (mesma lógica da listagem) ===
 
         // 1) setores do servidor vinculado ao usuário
         if ($user?->servidor) {
