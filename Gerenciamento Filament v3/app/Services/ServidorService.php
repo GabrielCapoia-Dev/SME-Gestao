@@ -35,9 +35,10 @@ class ServidorService
         $regimeTable = (new RegimeContratual)->getTable();
         $hasRegime   = Schema::hasTable($regimeTable);
 
-        // base
         $query = Servidor::query()
-            ->join('cargos', 'cargos.id', '=', 'servidores.cargo_id');
+            ->join('lotacoes', 'lotacoes.id', '=', 'servidores.lotacao_id')
+            ->join('cargos', 'cargos.id', '=', 'lotacoes.cargo_id');
+
 
         $joinedSetor   = false;
         $countExpr     = 'COUNT(servidores.id)'; // padrão sem join com setor

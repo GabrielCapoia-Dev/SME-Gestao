@@ -44,7 +44,20 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->colors([
                 'primary' => Color::Sky,
-                'gray' => Color::Slate,
+                // 'gray' => Color::Gray,
+                'gray' => [
+                    50 => '#ebf8faff',
+                    100 => '#d2fafcc7',
+                    200 => '#c0d4d4ff',
+                    300 => '#c7caccff',
+                    400 => '#a0a0a0ff',
+                    500 => '#929292ff',
+                    600 => '#5c5c66ff',
+                    700 => '#374151',
+                    800 => '#1f2937',
+                    900 => '#0e1930ff',
+                    950 => '#081124ff',
+                ],
             ])
             ->sidebarCollapsibleOnDesktop()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
